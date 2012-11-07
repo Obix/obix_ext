@@ -1,0 +1,129 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory java_simple_HTTP_request type:simple_HTTP_request
+
+	java_header
+		import java.net.InetSocketAddress;
+
+		import com.sun.net.httpserver.HttpExchange; 
+		
+		import org.obix.obix_ext.net.adresses.URI.fa_URI;
+		import org.obix.obix_ext.net.adresses.socket_address.fa_IP_socket_address;
+		import org.obix.obix_ext.IO.string_reader.fa_java_buffered_string_reader;
+		import org.obix.obix_core.basics.scalars.string.string_value.fa_string_value;
+	end java_header
+
+	java
+		private HttpExchange a_java_value;
+
+		public fa_java_simple_HTTP_request ( HttpExchange i_exchange ) {
+			a_java_value = i_exchange;
+		}
+	end java
+	
+	attribute cached_URI type:URI voidable:yes private:yes kind:variable end
+	
+	attribute cached_string_body_reader type:simple_string_reader voidable:yes private:yes kind:variable end
+	
+	attribute URI
+		get
+			script
+				if a_cached_URI =r void then
+					java
+						a_cached_URI = fa_URI.co_create_command ( new fa_string_value ( a_java_value.getRequestURI().toString() ) );
+					end java
+				end if
+				
+				o_URI = a_cached_URI
+			end
+		end
+	end
+	
+	attribute host_address
+		get
+			script
+				java
+					o_host_address = fa_IP_socket_address.create_from_java_value ( a_java_value.getLocalAddress() );
+				end java
+			end
+		end
+	end
+
+	attribute remote_address
+		get
+			script
+				java
+					o_remote_address = fa_IP_socket_address.create_from_java_value ( a_java_value.getRemoteAddress() );
+				end java
+			end
+		end
+	end
+
+	attribute protocol
+		get
+			script
+				java
+					o_protocol = new fa_non_empty_string ( a_java_value.getProtocol() );
+				end java
+			end
+		end
+	end
+
+	attribute method
+		get
+			script
+				java
+					o_method = new fa_non_empty_string ( a_java_value.getRequestMethod() );
+				end java
+			end
+		end
+	end
+
+	attribute path
+		get
+			script
+				o_path = a_URI.path
+			end
+		end
+	end
+	
+	attribute query
+		get
+			script
+				o_query = a_URI.query
+			end
+		end
+	end
+	
+	attribute query_map
+		get
+			script
+				o_query_map = a_URI.query_map
+			end
+		end
+	end
+
+	command get_query_value_if_exists
+		script
+			o_result = a_URI.get_query_value_if_exists ( i_query_name )
+		end
+	end
+
+	command get_string_body_reader
+		script
+			if a_cached_string_body_reader =r void then
+				java
+					a_cached_string_body_reader = new fa_java_buffered_string_reader ( a_java_value.getRequestBody() );
+				end java
+			end if
+			
+			o_result = a_cached_string_body_reader
+		end
+	end
+	
+end

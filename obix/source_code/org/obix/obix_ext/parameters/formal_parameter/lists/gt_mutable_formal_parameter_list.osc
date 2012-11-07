@@ -1,0 +1,27 @@
+generic type mutable_formal_parameter_list
+
+	param parameter_value_type end
+	
+	type
+
+		command contains_formal_parameter
+			in parameter_id_or_alternative_id type:parameter_id end
+			
+			out result type:yes_no end
+		end
+		
+		command add
+			in formal_parameter type:!gt_formal_parameter<{parameter_value_type}> &
+				check: not i_object_.contains_formal_parameter ( i_formal_parameter.id ) and &
+				( i_formal_parameter.alternative_id =r void or not i_object_.contains_formal_parameter ( i_formal_parameter.alternative_id ) ) end
+		end
+	
+		command make_immutable
+			in validator type:!validator < !gt_parameter_list<{parameter_value_type}> > voidable:yes end
+
+			out result type:!gt_formal_parameter_list<{parameter_value_type}> end
+		end
+
+	end
+
+end

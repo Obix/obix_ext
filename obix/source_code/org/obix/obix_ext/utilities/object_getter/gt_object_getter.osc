@@ -1,0 +1,15 @@
+generic type object_getter
+
+	param object_type end
+	
+	type
+	
+		command get_object
+			%system_error_handler_input_argument
+			
+			%result_or_system_error_void_output<{object_type}>
+		end
+
+	end
+	
+end

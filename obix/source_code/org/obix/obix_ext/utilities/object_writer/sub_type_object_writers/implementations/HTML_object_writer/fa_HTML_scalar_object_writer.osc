@@ -1,0 +1,67 @@
+factory HTML_scalar_object_writer type:scalar_object_writer
+
+	command write_scalar
+		script
+			var string value
+			case type of i_scalar
+				when simple_string simple_string then
+					v_value = se_HTML_utilities.escape_HTML_code ( c_simple_string )
+					
+				when number number then
+					v_value = c_number.to_string
+
+				when yes_no yes_no then
+					v_value = iif c_yes_no then a_yes_symbol else a_no_symbol end if
+
+				when enumerated enumerated then
+					v_value = se_HTML_utilities.escape_HTML_code ( c_enumerated )
+
+				when simple_character simple_character then
+					v_value = se_HTML_utilities.escape_HTML_code ( c_simple_character.to_string )
+
+			end case
+
+			i_writer.write ( v_value )
+		end
+	end
+	
+	creator create kind:in_all end
+
+	test
+		script
+			const memory_string_writer writer = fa_memory_string_writer.create
+			const scalar_object_writer to = co_create
+
+			c_writer.reset
+			to.write_scalar ( &
+				scalar= "qwe" &
+				writer = c_writer )
+			verify c_writer.result compare =v "qwe"
+
+			c_writer.reset
+			to.write_scalar ( &
+				scalar= 123 &
+				writer = c_writer )
+			verify c_writer.result compare =v "123"
+
+			c_writer.reset
+			to.write_scalar ( &
+				scalar= yes &
+				writer = c_writer )
+			verify c_writer.result compare =v "yes"
+
+			c_writer.reset
+			to.write_scalar ( &
+				scalar= ty_comparator_result.greater &
+				writer = c_writer )
+			verify c_writer.result compare =v "greater"
+
+			c_writer.reset
+			to.write_scalar ( &
+				scalar= 'a' &
+				writer = c_writer )
+			verify c_writer.result compare =v "a"
+		end
+	end
+
+end

@@ -1,0 +1,42 @@
+type mutable_JSON_object
+
+	inherit !mutable_collection<JSON_object_member>
+		command copy_to_immutable
+			out result type:JSON_object end
+		end
+	end
+	
+	command contains_member
+		in member_id type:simple_string end
+		
+		out result type:yes_no end
+	end
+	
+	command add
+		in member type:JSON_object_member check: not i_object_.contains_member ( i_member.id ) end
+	end
+	
+	command add_string
+		in i_id type:simple_string check: not i_object_.contains_member ( i_id ) end
+		in value type:simple_string end
+	end
+	
+	command add_integer
+		in i_id type:simple_string check: not i_object_.contains_member ( i_id ) end
+		in value type:signed_integer32 end
+	end
+	
+	command add_boolean
+		in i_id type:simple_string check: not i_object_.contains_member ( i_id ) end
+		in value type:yes_no end
+	end
+	
+	command add_null
+		in i_id type:simple_string check: not i_object_.contains_member ( i_id ) end
+	end
+	
+	command remove
+		in member_id type:simple_string check: i_object_.contains_member ( i_member_id ) end
+	end
+	
+end

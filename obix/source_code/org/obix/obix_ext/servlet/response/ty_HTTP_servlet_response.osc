@@ -1,0 +1,56 @@
+type HTTP_servlet_response
+
+	inherit servlet_response end
+	
+///
+	command add_header // addHeader()
+		in name type:simple_non_empty_string end
+		in value type:simple_non_empty_string end
+		in_check check: not i_object_.a_is_response_committed end
+	end
+
+	command replace_header // setHeader()
+		in name type:simple_non_empty_string end
+		in value type:simple_non_empty_string end
+		in_check check: i_object_.co_has_header ( i_name ) and not i_object_.a_is_response_committed end
+	end
+
+	command has_header
+		in name type:simple_non_empty_string end
+
+		out result type:yes_no end
+	end
+
+	command add_cookie
+		in cookie type:cookie end
+		in_check check: not i_object_.a_is_response_committed end
+	end
+
+	command set_status
+		in status type:zero_positive32 end
+		in_check check: not i_object_.a_is_response_committed end
+	end
+
+	command send_redirect
+		in location type:simple_non_empty_string end
+		in_check check: not i_object_.a_is_response_committed end
+	end
+
+	command send_error
+		in error_status type:zero_positive32 end
+		in error_message type:simple_non_empty_string voidable:yes end
+		in_check check: not i_object_.a_is_response_committed end
+	end
+
+	command encode_URL
+		in URL type:simple_non_empty_string end
+
+		out result type:non_empty_string end
+	end
+end ///
+
+/// TD
+String encodeRedirectURL(java.lang.String url) (should be called implicitly when sendRedirect() is called)
+end ///
+
+end

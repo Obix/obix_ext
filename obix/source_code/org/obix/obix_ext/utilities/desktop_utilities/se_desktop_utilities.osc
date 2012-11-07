@@ -1,0 +1,479 @@
+service desktop_utilities
+
+	java_header
+		import java.awt.Desktop;
+		import java.io.File;
+		import java.net.URI;
+
+		import org.obix.obix_core.java.fa_java_exception;
+	end java_header
+	
+	java
+		private static Desktop desktop = null;
+		
+		private static Desktop get_desktop() {
+
+			if ( desktop != null ) return desktop;
+			
+			try {
+				desktop = Desktop.getDesktop();
+			} catch ( Exception e ) {}
+			
+			return desktop;
+		}
+	end java
+			
+
+	command is_desktop_supported
+
+		out result type:yes_no end
+
+		script
+			java
+				o_result = Desktop.isDesktopSupported() ? fa_yes_no.a_yes : fa_yes_no.a_no;
+			end java
+		end
+	end
+
+	command is_browse_command_supported
+
+		out result type:yes_no end
+
+		script
+			java
+				o_result = ( get_desktop() != null && desktop.isSupported ( Desktop.Action.BROWSE ) ) ? fa_yes_no.a_yes : fa_yes_no.a_no;
+			end java
+		end
+	end
+	
+	command is_open_file_command_supported
+
+		out result type:yes_no end
+
+		script
+			java
+				o_result = ( get_desktop() != null && desktop.isSupported ( Desktop.Action.OPEN ) ) ? fa_yes_no.a_yes : fa_yes_no.a_no;
+			end java
+		end
+	end
+
+	command is_edit_file_command_supported
+
+		out result type:yes_no end
+
+		script
+			java
+				o_result = ( get_desktop() != null && desktop.isSupported ( Desktop.Action.EDIT ) ) ? fa_yes_no.a_yes : fa_yes_no.a_no;
+			end java
+		end
+	end
+
+	command is_print_file_command_supported
+
+		out result type:yes_no end
+
+		script
+			java
+				o_result = ( get_desktop() != null && desktop.isSupported ( Desktop.Action.PRINT ) ) ? fa_yes_no.a_yes : fa_yes_no.a_no;
+			end java
+		end
+	end
+
+	command is_email_command_supported
+
+		out result type:yes_no end
+
+		script
+			java
+				o_result = ( get_desktop() != null && desktop.isSupported ( Desktop.Action.MAIL ) ) ? fa_yes_no.a_yes : fa_yes_no.a_no;
+			end java
+		end
+	end
+
+
+	command open_in_default_browser
+		in address type:string end
+		%system_error_handler_input_argument
+		in_check check:is_browse_command_supported end
+		
+		%system_error_output_argument
+		
+		script
+			var URI URI
+			fa_URI.create_from_string ( &
+				string = i_address &
+				error_handler = i_error_handler ) &
+				( v_URI = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+			
+			o_error = open_URI_in_default_browser ( &
+				URI = v_URI &
+				error_handler = i_error_handler )
+		end
+		
+		test
+			script
+				// co_open_in_default_browser ( address = "http://www.rps-obix.com" )
+			end
+		end
+	end
+	
+	command open_URL_in_default_browser
+		in URL type:URL end
+		%system_error_handler_input_argument
+		in_check check:is_browse_command_supported end
+		
+		%system_error_output_argument
+		
+		script
+			var URI URI
+			i_URL.to_URI ( &
+				error_handler = i_error_handler ) &
+				( v_URI = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+			
+			o_error = open_URI_in_default_browser ( &
+				URI = v_URI &
+				error_handler = i_error_handler )
+		end
+		
+		test
+			script
+				// co_open_URL_in_default_browser ( URL = fa_URL.create ( "http://www.rps-obix.com"~ ) )
+			end
+		end
+	end
+	
+	command open_URI_in_default_browser
+		in URI type:URI end
+		%system_error_handler_input_argument
+		in_check check:is_browse_command_supported end
+		
+		%system_error_output_argument
+		
+		script
+			var java_exception java_exception
+			
+			java
+				try {
+					URI uri = new URI ( i_URI.getValue().java_value() );
+					desktop.browse ( uri );
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """Could not browse to URI '{{i_URI}}'. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = void )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+	
+	command open_file_in_default_browser
+		%existing_file_input_argument
+		%system_error_handler_input_argument
+		in_check check:is_browse_command_supported end
+		
+		%system_error_output_argument
+		
+		script
+			var URI URI
+			fa_URI.create_for_file ( &
+				file = i_file &
+				error_handler = i_error_handler ) &
+				( v_URI = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+			
+			o_error = co_open_URI_in_default_browser ( &
+				URI = v_URI &
+				error_handler = i_error_handler )
+		end
+	end
+	
+	command show_HTML_code_in_default_browser
+		in HTML_code type:string end
+		%system_error_handler_input_argument
+		in_check check:is_browse_command_supported end
+		
+		%system_error_output_argument
+		
+		script
+			var file HTML_file
+			se_text_file_IO.create_temporary_text_file ( &
+				file_name_extension = fa_file_name_extension.create ( "html"~ ) &
+				delete_file_on_exit = yes &
+				text = i_HTML_code ) &
+				( v_HTML_file = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+				
+			o_error = co_open_file_in_default_browser ( &
+				file = v_HTML_file &
+				error_handler = i_error_handler )
+		end
+	end
+	
+	
+
+	
+	command open_file
+		%existing_file_input_argument
+		%system_error_handler_input_argument
+		in_check check:is_open_file_command_supported end
+		
+		%system_error_output_argument
+		
+		script
+			var java_exception java_exception
+			
+			java
+				try {
+					File file = new File ( i_file.getValue().java_value() );
+					desktop.open ( file );
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """Could not open file '{{i_file}}'. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = i_file )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+		test
+			script
+				// co_open_file ( file = fa_file.create ( '''F:\work\projects\obix\02_working\projects\pr_tests\work\obix\source_code\li_tests\se_tests_java_start.osc'''~ ) )
+			end
+		end
+	end
+	
+	command edit_file
+		%existing_file_input_argument
+		%system_error_handler_input_argument
+		in_check check:is_edit_file_command_supported end
+		
+		%system_error_output_argument
+		
+		script
+			var java_exception java_exception
+			
+			java
+				try {
+					File file = new File ( i_file.getValue().java_value() );
+					desktop.edit ( file );
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """Could not edit file '{{i_file}}'. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = i_file )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+	
+	command print_file
+		%existing_file_input_argument
+		%system_error_handler_input_argument
+		in_check check:is_print_file_command_supported end
+		
+		%system_error_output_argument
+		
+		script
+			var java_exception java_exception
+			
+			java
+				try {
+					File file = new File ( i_file.getValue().java_value() );
+					desktop.print ( file );
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """Could not print file '{{i_file}}'. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = i_file )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+	
+	command open_default_email_client
+		in to type:non_empty_string end
+		in cc type:non_empty_string voidable:yes default:void end
+		in bcc type:non_empty_string voidable:yes default:void end
+		in subject type:non_empty_string end
+		in body type:non_empty_string end
+		%system_error_handler_input_argument
+		in_check check:is_email_command_supported end
+		
+		%system_error_output_argument
+		
+		script
+			// mailto:TTT?cc=CCC&bcc=BBB&subject=SSS&body=BBB
+			
+			const string_string_mutable_map query_map = fa_string_string_mutable_map.create
+			
+			if i_cc #r void then
+				c_query_map.add ( &
+					key = "cc" &
+					item = i_cc )
+			end if
+			
+			if i_bcc #r void then
+				c_query_map.add ( &
+					key = "bcc" &
+					item = i_bcc )
+			end if
+			
+			c_query_map.add ( &
+				key = "subject" &
+				item = i_subject )
+
+			c_query_map.add ( &
+				key = "body" &
+				item = i_body )
+				
+			const string query = se_URI_utilities.unencoded_query_map_to_encoded_query_string ( &
+				unencoded_query_map = c_query_map.make_immutable )
+
+			const string to_encoded = se_URI_utilities.encode_string ( &
+				string = i_to )
+			
+			const string URI_string = """mailto:{{c_to_encoded}}?{{c_query}}"""
+
+			var java_exception java_exception
+			
+			java
+				try {
+					URI uri = new URI ( c_URI_string.java_value() );
+					System.out.println ( uri.toString() );
+					desktop.mail ( uri );
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """Could not open email client for '{{i_to}}'. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = void )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+		test
+			script
+				///
+				open_default_email_client ( &
+					to = "first.last@example.com" &
+					cc = "cc@test.com" &
+					bcc = "bcc@foo.com" &
+					subject = '''Hello from "Jupiter" ?&=//:;, ?;<>''' &
+					body = '''body of 'Hello from "Jupiter" ?&=//:;, ?;<>
+line 2
+end'''' )
+				end ///
+			end
+		end
+	end
+	
+	command open_default_email_client_for_URI
+		in mailto_URI type:URI end
+		%system_error_handler_input_argument
+		in_check check:is_email_command_supported end
+		
+		%system_error_output_argument
+		
+		script
+			var java_exception java_exception
+			
+			java
+				try {
+					URI uri = new URI ( i_mailto_URI.getValue().java_value() );
+					desktop.mail ( uri );
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """Could not open email client for URI '{{i_mailto_URI}}'. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = void )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+		test
+			script
+				// open_default_email_client_for_URI ( mailto_URI = fa_URI.create ( '''mailto:someone@example.com?cc=someone_else@example.com&subject=This%20is%20the%20subject&body=This%20is%20the%20body'''~ ) )
+			end
+		end
+	end
+	
+	command open_empty_default_email_client
+		%system_error_handler_input_argument
+		in_check check:is_email_command_supported end
+		
+		%system_error_output_argument
+		
+		script
+			var java_exception java_exception
+			
+			java
+				try {
+					desktop.mail();
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """Could not open email client. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = void )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+		test
+			script
+				// open_empty_default_email_client
+			end
+		end
+	end
+	
+end

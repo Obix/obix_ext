@@ -1,0 +1,7 @@
+type JPA_error default_factory:yes
+
+	inherit resource_error
+		attribute a_id default:"JPA_error" end
+	end
+
+end

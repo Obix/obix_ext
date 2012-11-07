@@ -1,0 +1,5 @@
+type command_object
+
+	command execute	end
+
+end type

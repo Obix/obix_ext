@@ -1,0 +1,59 @@
+service object_field_description_utilities
+
+	command create_map_for_type_attributes
+		in type type:type end
+		in include_readonly_attributes type:yes_no default:no end
+		in fixed_field_type type:type_id_path voidable:yes default:void end
+		
+		out result type:object_field_description_map end
+		out type_attribute_list type:type_attribute_list voidable:yes end
+		
+		script
+			o_type_attribute_list = se_reflection.get_attribute_list_of_type ( &
+				type = i_type &
+				include_readonly_attributes = i_include_readonly_attributes &
+				include_inherited_attributes = yes )
+			if o_type_attribute_list #r void and o_type_attribute_list.is_empty then
+				o_type_attribute_list = void
+			end if
+			if o_type_attribute_list =r void then
+				o_result = co_create_singleton_map ( field_type = iif i_fixed_field_type #r void then i_fixed_field_type else i_type.id_path end if )
+				exit script
+			end if
+			
+			const mutable_object_field_description_map field_description_map = fa_mutable_object_field_description_map.create
+			repeat for each type_attribute attribute in o_type_attribute_list
+				const id attribute_id_suffix = c_attribute.id.suffix
+				const type_id_path field_type_id_path = iif i_fixed_field_type =r void then c_attribute.object_type.type_id_path else i_fixed_field_type end if
+				c_field_description_map.add ( &
+					id = c_attribute_id_suffix &
+					label = se_generic_UI_utilities.convert_id_to_label ( c_attribute_id_suffix ) &
+					UI_field_kind = se_UI_field_kind_utilities.get_UI_field_kind_for_type_id_path ( c_field_type_id_path ) )
+			end repeat
+			o_result = c_field_description_map.make_immutable
+		end
+	end
+
+	command create_singleton_map
+		in field_type type:type_id_path end
+		in field_id type:simple_non_empty_string voidable:yes default:void end
+		in field_label type:any_type voidable:yes default:void end
+		
+		out result type:object_field_description_map end
+		
+		script
+			const object_field_description object_field_description = fa_object_field_description.create ( &
+				id = iif i_field_id #r void &
+					then i_field_id &
+					else i_field_type.id.suffix end if &
+				label = iif i_field_label #r void &
+					then i_field_label &
+					else se_generic_UI_utilities.convert_id_to_label ( i_field_type.id.suffix ) end if &
+				UI_field_kind = se_UI_field_kind_utilities.get_UI_field_kind_for_type_id_path ( i_field_type ) )
+			o_result = fa_object_field_description_map.create_singleton ( &
+				key = c_object_field_description.id &
+				item = c_object_field_description )
+		end
+	end
+
+end

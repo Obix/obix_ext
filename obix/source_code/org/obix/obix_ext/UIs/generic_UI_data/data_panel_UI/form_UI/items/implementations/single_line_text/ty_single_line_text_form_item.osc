@@ -1,0 +1,8 @@
+type single_line_text_form_item
+
+	inherit form_UI_item end
+	
+	attribute width_in_characters type:positive32 voidable:yes default:void end
+
+end	
+	

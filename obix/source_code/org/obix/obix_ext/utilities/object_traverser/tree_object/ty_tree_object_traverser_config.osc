@@ -1,0 +1,11 @@
+type tree_object_traverser_config default_factory:yes
+
+	// attribute traverse_branch_nodes type:yes_no default:yes end
+	attribute traverse_leaf_nodes type:yes_no default:yes end
+	attribute traverse_branch_nodes_before_leaf_nodes type:yes_no default:yes end
+
+	// attribute max_child_nodes_to_traverse type:zero_positive32 voidable:yes default:void end
+
+	// TD attribute generate_node_number type:yes_no default:yes end
+
+end

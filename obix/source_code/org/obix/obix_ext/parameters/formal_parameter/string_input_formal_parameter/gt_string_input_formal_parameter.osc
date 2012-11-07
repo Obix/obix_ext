@@ -1,0 +1,21 @@
+generic type string_input_formal_parameter
+
+	param parameter_value_type end
+	
+	type
+
+		inherit !gt_formal_parameter<{parameter_value_type}> end
+
+		attribute converter type:!string_to_object_converter < {parameter_value_type} > end
+
+		command create_parameter_from_string
+			in value type:string voidable:yes end
+			%system_error_handler_input_argument
+			
+			%result_xor_error_output < &
+				result_type: "!gt_parameter<{parameter_value_type}>" &
+				error_type: parameter_error >
+		end
+	end
+
+end

@@ -1,0 +1,40 @@
+type tree_object_traverser_event_handler
+
+	command on_tree_start
+		in tree type:!simple_tree_node<*> end
+		in title_object type:any_type voidable:yes end
+	end
+	
+	command on_tree_end
+	end
+	
+	command on_child_node_list_start
+		in parent_tree_node type:!simple_tree_node<*> end
+		// in child_count type:zero_positive32 voidable:yes end
+	end
+	
+	command on_child_node_list_end
+		in parent_tree_node type:!simple_tree_node<*> end
+		// in child_count type:zero_positive32 end
+		in is_last_child_node type:yes_no end
+	end
+	
+	command on_tree_node_start
+		in tree_node type:any_type voidable:yes end
+		in node_index type:positive32 end
+		in is_last_child_node type:yes_no end
+		in is_root_node type:yes_no end
+		in is_branch_node type:yes_no end
+		in is_leaf_node type:yes_no end
+	end
+	
+	command on_tree_node_end
+		in tree_node type:any_type voidable:yes end
+		in node_index type:positive32 end
+		in is_last_child_node type:yes_no end
+		in is_root_node type:yes_no end
+		in is_branch_node type:yes_no end
+		in is_leaf_node type:yes_no end
+	end
+	
+end

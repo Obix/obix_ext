@@ -1,0 +1,11 @@
+template mutable_formal_parameter_list_factory
+
+	param parameter_value_type end
+
+	factory mutable_{parameter_value_type}_formal_parameter_list type: mutable_{parameter_value_type}_formal_parameter_list
+
+		!gf_mutable_formal_parameter_list<{parameter_value_type}>
+
+	end
+	
+end

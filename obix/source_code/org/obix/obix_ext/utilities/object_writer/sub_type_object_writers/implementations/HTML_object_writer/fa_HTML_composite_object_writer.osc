@@ -1,0 +1,61 @@
+factory HTML_composite_object_writer type:composite_object_writer
+
+	attribute composite_object_traverser type:composite_object_traverser default:fa_composite_object_traverser.create private:yes end
+
+	command write_composite
+		script
+			const composite_object_traverser_event_handler event_handler = fa_HTML_writer_composite_object_traverser_event_handler.create ( &
+				any_type_object_writer = a_any_type_object_writer &
+				writer = i_writer )
+			a_composite_object_traverser.traverse_composite_object ( &
+				object = i_composite &
+				event_handler = c_event_handler &
+				attributes_to_field_list_converter = i_attributes_to_field_list_converter )
+		end
+	end
+	
+	creator create kind:in_all end
+
+///
+	test
+		script
+			const memory_string_writer writer = fa_memory_string_writer.create
+			const composite_object_writer to = co_create ( any_type_object_writer = fa_HTML_any_type_object_writer.create )
+
+			const test_object test_object_1 = fa_test_object.create ( &
+				string_attribute = "joy" &
+				positive32_attribute = 123 &
+				yes_no_attribute = yes &
+				character_attribute = 'x' &
+				object_attribute = void &
+				list_attribute = void )
+			to.write_composite ( &
+				composite= test_object_1 &
+				writer = c_writer )
+			verify c_writer.result compare =v '''<table border="1" cellspacing="0" cellpadding="2"><tr><td align="right">string_attribute</td><td>joy</td></tr><tr><td align="right">positive32_attribute</td><td>123</td></tr><tr><td align="right">yes_no_attribute</td><td>yes</td></tr><tr><td align="right">character_attribute</td><td>x</td></tr><tr><td align="right">object_attribute</td><td>#void#</td></tr><tr><td align="right">list_attribute</td><td>#void#</td></tr></table>'''
+			
+			c_writer.reset
+			to.write_composite ( &
+				composite= test_object_1 &
+				writer = c_writer &
+				information_level = ty_object_information_level.yes_no )
+			verify c_writer.result compare =v "yes"
+			
+			c_writer.reset
+			to.write_composite ( &
+				composite= test_object_1 &
+				writer = c_writer &
+				information_level = ty_object_information_level.none )
+			verify c_writer.result compare =v ""
+			
+			c_writer.reset
+			to.write_composite ( &
+				composite= test_object_1 &
+				writer = c_writer &
+				information_level = ty_object_information_level.string )
+			verify c_writer.result compare =v "Object&nbsp;of&nbsp;type&nbsp;test_object"
+		end
+	end test
+end ///
+
+end

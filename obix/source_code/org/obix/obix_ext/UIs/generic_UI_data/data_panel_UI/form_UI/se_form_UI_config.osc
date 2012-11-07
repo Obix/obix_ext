@@ -1,0 +1,16 @@
+service form_UI_config
+
+	attribute_list voidable:yes kind:variable setable:all
+
+		attribute single_line_text_width_in_characters type:positive32 default: 50 end
+
+		attribute multi_line_text_width_in_characters type:positive32 default: a_single_line_text_width_in_characters end
+		attribute multi_line_text_height_in_lines type:positive32 default: 7 end
+		
+		attribute integer_number_width_in_characters type:positive32 default: 15 end
+
+		attribute local_date_time_width_in_characters type:positive32 default: 20 end
+
+	end
+
+end

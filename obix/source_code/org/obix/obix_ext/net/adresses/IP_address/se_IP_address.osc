@@ -1,0 +1,34 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service IP_address
+
+	java_header
+		import java.net.InetAddress;
+		import java.net.Inet4Address;
+		import java.net.Inet6Address;
+		
+		import org.obix.obix_core.basics.scalars.string.string_value.in_string_value;
+		import org.obix.obix_core.basics.scalars.string.string_value.fa_string_value;
+	end java_header
+
+	java
+		public static in_IP_address create_from_java_value ( java.net.InetAddress i_address ) {
+
+			in_string_value value = new fa_string_value ( i_address.getHostAddress() );
+
+			if ( i_address instanceof Inet6Address ) {
+				return fa_IP6_address.co_create_command ( value );
+			} else {
+				return fa_IP4_address.co_create_command ( value );
+			}
+		}
+	end java
+
+	attribute local_host type:IP4_address default:fa_IP4_address.create ( "127.0.0.1".value ) end
+
+end

@@ -1,0 +1,1 @@
+type JSON_object_member	inherit JSON_writable end	attribute a_id type:JSON_object_member_id end	attribute value type:JSON_value endend

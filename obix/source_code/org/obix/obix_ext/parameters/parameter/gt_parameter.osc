@@ -1,0 +1,13 @@
+generic type parameter
+
+	param parameter_value_type end
+	
+	type
+
+		attribute a_id type:parameter_id end
+		
+		attribute value type:{parameter_value_type} voidable:yes end
+	
+	end
+
+end

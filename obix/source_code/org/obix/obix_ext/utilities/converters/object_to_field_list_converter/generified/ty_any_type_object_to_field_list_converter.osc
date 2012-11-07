@@ -1,0 +1,5 @@
+type any_type_object_to_field_list_converter
+
+	!gt_object_to_field_list_converter<any_type>
+
+end

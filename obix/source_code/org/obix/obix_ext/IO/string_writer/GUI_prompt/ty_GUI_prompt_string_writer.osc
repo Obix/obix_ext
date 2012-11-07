@@ -1,0 +1,9 @@
+type GUI_prompt_string_writer
+
+	inherit simple_string_writer end
+
+	attribute result type:string kind:readonly_variable end
+	
+	command reset end
+
+end type

@@ -1,0 +1,381 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service string_extractor
+
+	command extract_first_character
+		in string type:simple_non_empty_string end
+
+		out result type:character end
+
+		script
+			java
+				String string = i_string.getValue().java_value();
+				o_result = new fa_character ( string.charAt(0) ) ;
+			end java
+		end
+
+		test
+			script
+				test string = "abc"
+				verify result compare =v 'a'
+
+				test string = "b"
+				verify result compare =v 'b'
+			end
+		end
+	end
+	
+	command extract_last_character
+		in string type:simple_non_empty_string end
+
+		out result type:character end
+
+		script
+			java
+				String string = i_string.getValue().java_value();
+				o_result = new fa_character ( string.charAt ( string.length() - 1 ) ) ;
+			end java
+		end
+
+		test
+			script
+				test string = "abc"
+				verify result compare =v 'c'
+
+				test string = "b"
+				verify result compare =v 'b'
+			end
+		end
+	end
+	
+	command extract_first
+		in string type:simple_non_empty_string end
+
+		out result type:non_empty_string check: i_result.item_count compare =v 1 end
+
+		script
+			java
+				String string = i_string.getValue().java_value();
+				o_result = new fa_non_empty_string ( string.substring ( 0, 1 ) ) ;
+			end java
+		end
+
+		test
+			script
+				test string = "abc"
+				verify result compare =v "a"
+
+				test string = "a"
+				verify result compare =v "a"
+			end
+		end
+	end
+	
+	command extract_last
+		in string type:simple_non_empty_string end
+
+		out result type:non_empty_string check: i_result.item_count compare =v 1 end
+
+		script
+			java
+				String string = i_string.getValue().java_value();
+				int item_count = string.length();
+				o_result = new fa_non_empty_string ( string.substring ( item_count - 1, item_count ) ) ;
+			end java
+		end
+
+		test
+			script
+				test string = "abc"
+				verify result compare =v "c"
+
+				test string = "a"
+				verify result compare =v "a"
+			end
+		end
+	end
+	
+	command extract_beginning
+		in string type:simple_non_empty_string end
+		in count type:positive32 end
+		%check_max_string_length_input<count>
+
+		out result type:non_empty_string check: i_result.item_count compare =v i_count end
+
+		script
+			java
+				String string = i_string.getValue().java_value();
+				int count = i_count.getValue().java_value();
+				o_result = new fa_non_empty_string ( string.substring ( 0, count ) ) ;
+			end java
+		end
+
+		test
+			script
+				test string = "abc"; count = 2
+				verify result compare =v "ab"
+
+				test string = "a"; count = 1
+				verify result compare =v "a"
+
+				test string = "a"; count = 2
+				verify error
+			end
+		end
+	end
+	
+	command extract_end
+		in string type:simple_non_empty_string end
+		in count type:positive32 end
+		%check_max_string_length_input<count>
+
+		out result type:non_empty_string check: i_result.item_count compare =v i_count end
+
+		script
+			java
+				String string = i_string.getValue().java_value();
+				int count = i_count.getValue().java_value();
+				int item_count = string.length();
+				o_result = new fa_non_empty_string ( string.substring ( item_count - count, item_count ) ) ;
+			end java
+		end
+
+		test
+			script
+				test string = "abc"; count = 2
+				verify result compare =v "bc"
+
+				test string = "a"; count = 1
+				verify result compare =v "a"
+
+				test string = "abc"; count = 4
+				verify error
+			end
+		end
+	end
+	
+	command extract_from
+		in string type:simple_non_empty_string end
+		in from type:positive32 end
+		%check_max_string_length_input<from>
+
+		out result type:non_empty_string check: i_result.item_count compare =v i_string.value.item_count + 1 - i_from end
+		
+		script
+			java
+				String string = i_string.getValue().java_value();
+				int from = i_from.getValue().java_value();
+				o_result = new fa_non_empty_string ( string.substring ( from - 1 ) ) ;
+			end java
+		end
+
+		test
+			script
+				test string = "abc"; from = 1
+				verify v_result compare =v "abc"
+
+				test string = "abc"; from = 2
+				verify v_result compare =v "bc"
+
+				test string = "abc"; from = 3
+				verify v_result compare =v "c"
+
+				test string = "abc"; from = 4
+				verify error
+			end
+		end
+	end
+
+	command extract_to
+		in string type:simple_non_empty_string end
+		in to type:positive32 end
+		%check_max_string_length_input<to>
+
+		out result type:non_empty_string check: i_result.item_count compare =v i_to end
+
+		script
+			java
+				String string = i_string.getValue().java_value();
+				int to = i_to.getValue().java_value();
+				o_result = new fa_non_empty_string ( string.substring ( 0, to ) ) ;
+			end java
+		end
+
+		test
+			script
+				test string = "abc"; to = 1
+				verify v_result compare =v "a"
+
+				test string = "abc"; to = 2
+				verify v_result compare =v "ab"
+
+				test string = "abc"; to = 3
+				verify v_result compare =v "abc"
+
+				test string = "abc"; to = 4
+				verify error
+			end
+		end
+	end
+
+	command extract_from_to
+		in string type:simple_non_empty_string end
+		in from type:positive32 end
+		in to type:positive32 end
+		in_check
+			script
+				check i_to compare <= i_string.value.item_count &
+					error_message: """i_to ({{i_to.to_string}}) must be less than or equal to the length of i_string ({{i_string.value.item_count.to_string}}).""" &
+					error_id: out_of_bounds
+				check i_to compare >= i_from &
+					error_message: """i_from ({{i_from.to_string}}) must be less than or equal to i_to ({{i_to.to_string}})""" &
+					error_id: out_of_bounds
+			end
+		end
+
+		out result type:non_empty_string check: i_result.item_count =v i_to + 1 - i_from end
+
+		script
+			java
+				String string = i_string.getValue().java_value();
+				int from = i_from.getValue().java_value();
+				int to = i_to.getValue().java_value();
+				o_result = new fa_non_empty_string ( string.substring ( from - 1, to ) ) ;
+			end java
+		end
+
+		test
+			script
+				test string = "abc"; from = 1; to = 1
+				verify v_result compare =v "a"
+
+				test string = "abc"; from = 1; to = 2
+				verify v_result compare =v "ab"
+
+				test string = "abc"; from = 1; to = 3
+				verify v_result compare =v "abc"
+
+				test string = "abc"; from = 2; to = 2
+				verify v_result compare =v "b"
+
+				test string = "abc"; from = 2; to = 3
+				verify v_result compare =v "bc"
+
+				test string = "abc"; from = 3; to = 3
+				verify v_result compare =v "c"
+
+				test string = "abc"; from = 1; to = 4
+				verify error
+
+				test string = "abc"; from = 3; to = 2
+				verify error
+			end
+		end
+	end
+
+	command extract_from_count
+		in string type:simple_non_empty_string end
+		in from type:positive32 end
+		in count type:positive32 end
+		in_check check: i_from + i_count - 1 compare <= i_string.value.item_count &
+			error_message: """i_from ({{i_from.to_string}}) + i_count ({{i_count.to_string}}) must be less than or equal to the length of i_string ({{i_string.value.item_count.to_string}}).""" &
+			error_id: out_of_bounds end
+
+		out result type:string check: i_result.item_count compare =v i_count end
+
+		script
+			java
+				String string = i_string.getValue().java_value();
+				int from = i_from.getValue().java_value();
+				int count = i_count.getValue().java_value();
+				o_result = new fa_non_empty_string ( string.substring ( from - 1, from + count - 1 ) ) ;
+			end java
+		end
+
+		test
+			script
+				test string = "abcd"; from = 2; count = 2
+				verify result compare =v "bc"
+
+				test string = "abcd"; from = 1; count = 2
+				verify result compare =v "ab"
+
+				test string = "abcd"; from = 1; count = 4
+				verify result compare =v "abcd"
+
+				test string = "abcd"; from = 4; count = 1
+				verify result compare =v "d"
+
+				test string = "a"; from = 1; count = 1
+				verify result compare =v "a"
+
+				test string = "ab"; from = 2; count = 2
+				verify error
+			end
+		end
+	end
+	
+	command extract_to_count
+		in string type:simple_non_empty_string end
+		in to type:positive32 end
+		in count type:positive32 end
+		in_check
+			script
+				check i_to compare <= i_string.value.item_count &
+					error_message: """i_to ({{i_to.to_string}}) must be less than or equal to the length of i_string ({{i_string.value.item_count.to_string}}).""" &
+					error_id: out_of_bounds
+				check i_to - i_count compare >= 0 &
+					error_message: """i_to ({{i_to.to_string}}) - i_count ({{i_count.to_string}}) must be >= 0.""" &
+					error_id: out_of_bounds
+			end
+		end
+
+		out result type:string check: i_result.item_count compare =v i_count end
+
+		script
+			java
+				String string = i_string.getValue().java_value();
+				int to = i_to.getValue().java_value();
+				int count = i_count.getValue().java_value();
+				o_result = new fa_non_empty_string ( string.substring ( to - count, to ) ) ;
+			end java
+		end
+
+		test
+			script
+				test string = "abcd"; to = 3; count = 2
+				verify result compare =v "bc"
+
+				test string = "abcd"; to = 2; count = 2
+				verify result compare =v "ab"
+
+				test string = "abcd"; to = 4; count = 2
+				verify result compare =v "cd"
+
+				test string = "abcd"; to = 4; count = 4
+				verify result compare =v "abcd"
+
+				test string = "abcd"; to = 1; count = 1
+				verify result compare =v "a"
+
+				test string = "abcd"; to = 4; count = 1
+				verify result compare =v "d"
+
+				test string = "a"; to = 1; count = 1
+				verify result compare =v "a"
+
+				test string = "ab"; to = 3; count = 2
+				verify error
+
+				test string = "ab"; to = 2; count = 3
+				verify error
+			end
+		end
+	end
+
+end service

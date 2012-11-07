@@ -1,0 +1,240 @@
+factory JSON_object type:JSON_object
+
+	attribute map type:!map < key_type: simple_string item_type: JSON_object_member > private:yes end
+
+	attribute is_empty
+		get
+			script
+				o_is_empty = a_map.is_empty
+			end
+		end
+	end
+
+	attribute item_count
+		get
+			script
+				o_item_count = a_map.item_count
+			end
+		end
+	end
+
+	command item_iterator
+		script
+			o_result = a_map.item_iterator
+		end
+	end
+
+	command contains_value
+		script
+			o_result = a_map.contains_key ( i_member_id )
+		end
+	end
+	
+	command require_value
+		script
+			o_result = a_map.require_item ( i_member_id ).value
+		end
+	end
+
+	command get_value
+		script
+			const JSON_object_member member = a_map.get_item_if_contained ( i_member_id )
+			if c_member =r void then
+				exit script
+			end if
+
+			o_result = c_member.value
+		end
+	end
+
+	command require_object_value
+		script
+			get_object_value ( &
+				member_id = i_member_id &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error = error )
+		end
+	end
+
+	command get_object_value
+		script
+			const JSON_value JSON_value = co_get_value ( i_member_id )
+			if c_JSON_value =r void then
+				exit script
+			end if
+			
+			case type of c_JSON_value
+				when JSON_object JSON_object then
+					o_result = c_JSON_object
+				when JSON_null JSON_null then
+					o_result = void
+				otherwise
+					o_error = fa_JSON_parsing_error.create ( &
+						description = """Member '{{i_member_id}}' of JSON object must be of type 'JSON object'.""" &
+						data = this )
+					i_error_handler.handle_system_error ( o_error )
+			end case
+		end
+	end
+
+	command require_string_value
+		script
+			co_get_string_value ( &
+				member_id = i_member_id &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error = error )
+		end
+	end
+
+	command get_string_value
+		script
+			const JSON_value JSON_value = co_get_value ( i_member_id )
+			if c_JSON_value =r void then
+				exit script
+			end if
+			
+			case type of c_JSON_value
+				when JSON_string JSON_string then
+					o_result = c_JSON_string.value.to_string
+				when JSON_null JSON_null then
+					o_result = void
+				otherwise
+					o_error = fa_JSON_parsing_error.create ( &
+						description = """Member '{{i_member_id}}' of JSON object must be of type 'string'.""" &
+						data = this )
+					i_error_handler.handle_system_error ( o_error )
+			end case
+		end
+	end
+
+	command require_integer_value
+		script
+			get_integer_value ( &
+				member_id = i_member_id &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error = error )
+		end
+	end
+
+	command get_integer_value
+		script
+			const JSON_value JSON_value = co_get_value ( i_member_id )
+			if c_JSON_value =r void then
+				exit script
+			end if
+			
+			case type of c_JSON_value
+				when JSON_integer JSON_integer then
+					o_result = fa_signed_integer32.create ( c_JSON_integer.value )
+				when JSON_null JSON_null then
+					o_result = void
+				otherwise
+					o_error = fa_JSON_parsing_error.create ( &
+						description = """Member '{{i_member_id}}' of JSON object must be of type 'integer'.""" &
+						data = this )
+					i_error_handler.handle_system_error ( o_error )
+			end case
+		end
+	end
+
+	command require_positive32_value
+		script
+			get_positive32_value ( &
+				member_id = i_member_id &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error = error )
+		end
+	end
+
+	command get_positive32_value
+		script
+			var signed_integer32 value
+			get_integer_value ( &
+				member_id = i_member_id &
+				error_handler = i_error_handler ) &
+				( v_value = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+			
+			o_result = fa_positive32.create ( v_value.value ) on_error:continue
+			if v_program_error_ #r void then
+				o_error = fa_JSON_parsing_error.create ( &
+					description = """Member '{{i_member_id}}' of JSON object must be of type 'positive integer'.""" &
+					data = this )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+
+	command require_yes_no_value
+		script
+			get_yes_no_value ( &
+				member_id = i_member_id &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error = error )
+		end
+	end
+
+	command get_yes_no_value
+		script
+			const JSON_value JSON_value = co_get_value ( i_member_id )
+			if c_JSON_value =r void then
+				exit script
+			end if
+			
+			case type of c_JSON_value
+				when JSON_boolean JSON_boolean then
+					o_result = c_JSON_boolean.value
+				when JSON_null JSON_null then
+					o_result = void
+				otherwise
+					o_error = fa_JSON_parsing_error.create ( &
+						description = """Member '{{i_member_id}}' of JSON object must be of type 'boolean'.""" &
+						data = this )
+					i_error_handler.handle_system_error ( o_error )
+			end case
+		end
+	end
+
+	command write
+		script
+			i_writer.write ( string = "{" )
+
+			repeat for each JSON_object_member member in a_map counter:index
+				c_member.write ( i_writer )
+				if c_index < a_map.item_count then
+					i_writer.write ( string = "," )
+				end if
+			end
+
+			i_writer.write ( string = "}" )
+		end
+	end
+	
+	command to_string
+		script
+			const memory_string_writer writer = fa_memory_string_writer.create
+			co_write ( c_writer )
+			o_result = c_writer.result
+		end
+	end
+	
+
+	creator create
+		in map type:!map < key_type: simple_string item_type: JSON_object_member > end
+			
+		out result type: JSON_object end
+		
+		script
+			o_result.map = i_map
+		end
+	end
+
+end

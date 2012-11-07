@@ -1,0 +1,25 @@
+type edit_form_UI_item
+
+	inherit form_UI_item
+		attribute include_in_request default:yes end
+	end
+	
+	attribute default_value type:any_type voidable:yes default:void end
+	attribute default_value_getter type:any_type_object_getter voidable:yes default:void end
+	attribute void_allowed type:yes_no end
+	attribute tab_index type:positive32 voidable:yes default:void end
+	attribute allowed_values_list type:!indexed_list<simple_string> voidable:yes default:void end
+	attribute example_values_list type:!indexed_list<simple_string> voidable:yes default:void end
+	attribute validator_command type:UI_action voidable:yes default:void end
+	attribute access_key type:simple_string voidable:yes default:void end
+	attribute placeholder_text type:simple_string voidable:yes default:void end
+
+	attribute_check
+		script
+			check not ( i_default_value #r void and i_default_value_getter #r void )
+			check not ( i_allowed_values_list #r void and i_example_values_list #r void )
+		end
+	end
+
+end	
+	

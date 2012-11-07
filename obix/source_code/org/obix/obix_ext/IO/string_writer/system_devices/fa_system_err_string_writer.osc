@@ -1,0 +1,36 @@
+factory system_err_string_writer type:simple_string_writer
+
+	command write
+		script
+			se_system.err.write ( string = i_string )
+		end
+	end
+
+	command write_line
+		script
+			se_system.err.write_line ( string = i_string )
+		end
+	end
+
+	command write_new_line
+		script
+			se_system.err.write_new_line
+		end
+	end
+	
+	command close
+		script
+			// do nothing
+		end
+	end
+
+	command flush
+		script
+			// do nothing
+		end
+	end
+
+	
+	creator create kind:in_all end
+
+end factory

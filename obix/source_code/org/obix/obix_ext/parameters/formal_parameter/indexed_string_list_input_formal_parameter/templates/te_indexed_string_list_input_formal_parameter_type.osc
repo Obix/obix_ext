@@ -1,0 +1,11 @@
+template indexed_string_list_input_formal_parameter_type
+
+	param parameter_value_type end
+
+	type {parameter_value_type}_formal_parameter
+	
+		!gt_indexed_string_list_input_formal_parameter<{parameter_value_type}>
+
+	end
+
+end

@@ -1,0 +1,5 @@
+type JSON_string
+
+	inherit JSON_value; simple_string end
+
+end

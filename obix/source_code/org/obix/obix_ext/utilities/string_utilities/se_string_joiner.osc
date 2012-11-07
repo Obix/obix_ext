@@ -1,0 +1,123 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service string_joiner
+
+	command join
+		in token_list type:indexed_string_list end
+		in join_string type:simple_string default: "; " end
+		
+		out result type:string end
+		
+		script
+			o_result = join_from_to ( &
+				token_list = i_token_list &
+				join_string = i_join_string &
+				from_index = 1 &
+				to_index = fa_positive32.create ( i_token_list.item_count.value ) )
+		end
+	end
+
+	command join_from
+		in token_list type:indexed_string_list end
+		in join_string type:simple_string default: "; " end
+		in from_index type:positive32 end
+		in_check
+			script
+				check i_from_index <= i_token_list.item_count
+			end
+		end
+		
+		out result type:string end
+		
+		script
+			o_result = join_from_to ( &
+				token_list = i_token_list &
+				join_string = i_join_string &
+				from_index = i_from_index &
+				to_index = fa_positive32.create ( i_token_list.item_count.value ) )
+		end
+	end
+
+	command join_to
+		in token_list type:indexed_string_list end
+		in join_string type:simple_string default: "; " end
+		in to_index type:positive32 end
+		in_check
+			script
+				check i_to_index <= i_token_list.item_count
+			end
+		end
+		
+		out result type:string end
+		
+		script
+			o_result = join_from_to ( &
+				token_list = i_token_list &
+				join_string = i_join_string &
+				from_index = 1 &
+				to_index = i_to_index )
+		end
+	end
+
+	command join_from_to
+		in token_list type:indexed_string_list end
+		in join_string type:simple_string default: "; " end
+		in from_index type:positive32 end
+		in to_index type:positive32 end
+		in_check
+			script
+				check i_to_index >= i_from_index
+				check i_to_index <= i_token_list.item_count
+			end
+		end
+		
+		out result type:string end
+		
+		script
+			const mutable_string join = fa_mutable_string.create
+
+			c_join.append ( i_token_list.item_at_index ( i_from_index ) )
+			
+			if i_to_index > i_from_index then
+				repeat from positive32 index = i_from_index + 1 to i_to_index
+					c_join.append ( i_join_string )
+					c_join.append ( i_token_list.item_at_index ( c_index ) )
+				end
+			end
+			
+			o_result = c_join.to_string
+		end
+		
+		test
+			script
+				const indexed_string_list token_list = fa_indexed_string_list.create_trio ( &
+					item1 = "abc" &
+					item2 = "1 2 3" &
+					item3 = "qwe 123" )
+				test token_list = c_token_list; from_index = 1; to_index = 3
+				verify result compare =v "abc; 1 2 3; qwe 123"
+
+				test token_list = c_token_list; from_index = 2; to_index = 3
+				verify result compare =v "1 2 3; qwe 123"
+
+				test token_list = c_token_list; from_index = 3; to_index = 3
+				verify result compare =v "qwe 123"
+
+				test token_list = c_token_list; join_string = " | "; from_index = 1; to_index = 2
+				verify result compare =v "abc | 1 2 3"
+
+				test token_list = c_token_list; from_index = 3; to_index = 4
+				verify error
+
+				test token_list = c_token_list; from_index = 3; to_index = 2
+				verify error
+			end
+		end
+	end
+
+end service

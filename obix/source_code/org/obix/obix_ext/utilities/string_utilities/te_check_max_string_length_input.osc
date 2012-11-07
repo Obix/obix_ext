@@ -1,0 +1,16 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+template check_max_string_length_input
+
+	param input_argument_id_suffix
+
+	in_check check: i_{input_argument_id_suffix} compare <= i_string.value.item_count &
+		error_message: """i_{input_argument_id_suffix} ({{i_{input_argument_id_suffix}.to_string}}) must be less than or equal to the length of i_string ({{i_string.value.item_count.to_string}}).""" &
+		error_id: out_of_bounds end
+
+end template

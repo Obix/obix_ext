@@ -1,0 +1,14 @@
+service HTML_constants
+
+	attribute_list type:non_empty_string
+
+		// attribute void_value_as_string type:string default: se_HTML_utilities.escape_HTML_data ( data = se_any_type.void_object_as_string ) end // cyclic dependency error!
+		// attribute void_value_as_string default: se_any_type.void_object_as_string
+
+		attribute new_line_tag default: "<br/>" end
+
+		attribute non_breaking_space default: "&nbsp;" end
+
+	end
+
+end

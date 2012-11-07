@@ -1,0 +1,37 @@
+factory mutable_string_string_writer type:mutable_string_string_writer
+
+	command write
+		script
+			a_mutable_string.append ( i_string )
+		end
+	end
+
+	command write_line
+		script
+			a_mutable_string.append ( i_string )
+			a_mutable_string.append_new_line
+		end
+	end
+
+	command write_new_line
+		script
+			a_mutable_string.append_new_line
+		end
+	end
+	
+	command close
+		script
+			// do nothing
+		end
+	end
+
+	command flush
+		script
+			// do nothing
+		end
+	end
+	
+
+	creator create kind:in_all end
+
+end factory

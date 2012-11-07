@@ -1,0 +1,88 @@
+factory mutable_JSON_object type:mutable_JSON_object
+
+	attribute map type:!mutable_map < key_type: simple_string item_type: JSON_object_member > &
+		default:!mutable_map_factory < key_type: simple_string item_type: JSON_object_member >.create private:yes end
+
+	attribute is_empty
+		get
+			script
+				o_is_empty = a_map.is_empty
+			end
+		end
+	end
+
+	attribute item_count
+		get
+			script
+				o_item_count = a_map.item_count
+			end
+		end
+	end
+
+	command item_iterator
+		script
+			o_result = a_map.item_iterator
+		end
+	end
+
+	command contains_member
+		script
+			o_result = a_map.contains_key ( i_member_id )
+		end
+	end
+	
+	command add
+		script
+			a_map.add ( &
+				key = i_member.id &
+				item = i_member )
+		end
+	end
+	
+	command add_string
+		script
+			co_add ( fa_JSON_object_string_member.create ( &
+				id = fa_JSON_object_member_id.create ( i_id.value ) &
+				value = fa_JSON_string.create ( i_value.value ) ) )
+		end
+	end
+
+	command add_integer
+		script
+			co_add ( fa_JSON_object_integer_member.create ( &
+				id = fa_JSON_object_member_id.create ( i_id.value ) &
+				value = fa_JSON_integer.create ( i_value.value ) ) )
+		end
+	end
+	
+	command add_boolean
+		script
+			co_add ( fa_JSON_object_boolean_member.create ( &
+				id = fa_JSON_object_member_id.create ( i_id.value ) &
+				value = fa_JSON_boolean.create ( i_value ) ) )
+		end
+	end
+	
+	command add_null
+		script
+			co_add ( fa_JSON_object_null_member.create ( &
+				id = fa_JSON_object_member_id.create ( i_id.value ) &
+				value = se_JSON_null.shared_value ) )
+		end
+	end
+	
+	command remove
+		script
+			a_map.remove ( i_member_id )
+		end
+	end
+
+	command copy_to_immutable
+		script
+			o_result = fa_JSON_object.create ( a_map.copy_to_immutable )
+		end
+	end
+	
+	creator create kind:in_all end
+	
+end

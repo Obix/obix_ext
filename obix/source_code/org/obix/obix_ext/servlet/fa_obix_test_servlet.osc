@@ -1,0 +1,25 @@
+factory obix_test_servlet type:HTTP_servlet java: "extends javax.servlet.http.HttpServlet"
+
+	%java_servlet_extension_code
+
+	command start
+		script
+			i_config.a_message_handler.info_message ( "Obix test servlet started." )
+		end
+	end
+
+	command end
+		script
+			i_config.a_message_handler.info_message ( "Obix test servlet stopped." )
+		end
+	end
+	
+	command handle_request
+		script
+			i_config.a_message_handler.info_message ( "Obix test servlet request." )
+
+			i_response.string_response_writer.write ( string = "<h3>Hello from test servlet at " & se_time.current_local_time & "</h3>")
+		end
+	end
+
+end

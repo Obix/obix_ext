@@ -1,0 +1,57 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service string_transformer
+
+	command to_quoted_literal
+		in string type:simple_string end
+
+		out result type:non_empty_string end
+
+		script
+			o_result = se_string_constants.double_quote & co_to_unquoted_literal ( i_string ) & se_string_constants.double_quote
+		end
+	end
+
+	command to_unquoted_literal
+		in string type:simple_string end
+
+		out result type:string end
+
+		script
+			// qwe + "asd" + "asd\"*\"aaa"
+			// ->
+			// qwe + \"asd\" + \"asd\\\"*\\\"aaa\"
+		
+			// \ -> \\
+			// " -> \"
+			// LF -> \n
+			// CR -> \r
+			// TAB -> \t
+
+///
+			var ty_string v_enclose = iif i_enclose_literal then "\"" else se_string_constants.empty_string end if
+			o_result = v_enclose & &
+				co_replace_all_regex ( i_to_replace = "\\\\"; i_replace_by = "\\\\\\\\" ). &
+				co_replace_all_regex ( i_to_replace = "\""; i_replace_by = "\\\\\"" ). &
+				co_replace_all_regex ( i_to_replace = "\\n"; i_replace_by = "\\\\n" ). &
+				co_replace_all_regex ( i_to_replace = "\\r"; i_replace_by = "\\\\r" ) & &
+				v_enclose
+end ///
+			java
+				String v_temp = i_string.getValue().java_value().
+					replaceAll("\\\\", "\\\\\\\\"). 
+					replaceAll("\"", "\\\\\"" ).
+					replaceAll("\\n", "\\\\n" ).
+					replaceAll("\\r", "\\\\r" ).
+					replaceAll("\\t", "\\\\t" ) ;
+				o_result = new fa_string ( v_temp ) ;
+			end java
+		end
+	end
+
+end service

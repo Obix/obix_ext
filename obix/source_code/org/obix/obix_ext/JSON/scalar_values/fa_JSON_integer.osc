@@ -1,0 +1,11 @@
+factory JSON_integer type:JSON_integer
+
+	command write
+		script
+			i_writer.write ( a_value.to_string )
+		end
+	end
+
+	creator create kind:in_all end
+
+end

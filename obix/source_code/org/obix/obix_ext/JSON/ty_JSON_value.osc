@@ -1,0 +1,1 @@
+type JSON_value	inherit JSON_writable endend

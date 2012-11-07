@@ -1,0 +1,5 @@
+type form_UI_item_map
+
+	!gt_map<key_type:simple_non_empty_string; item_type:form_UI_item>
+	
+end

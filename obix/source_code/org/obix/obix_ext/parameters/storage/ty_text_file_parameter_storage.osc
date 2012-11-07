@@ -1,0 +1,29 @@
+type text_file_parameter_storage
+
+	command store_parameter_list
+		in parameter_list type:!gt_parameter_list<*> end
+		in file type:file end
+		in overwrite_existing_file type:yes_no end
+		%system_error_handler_input_argument
+		in_check check: not i_file.exists or i_overwrite_existing_file end
+		
+		%resource_error_output_argument
+		out_check check: i_file.exists or i_error #r void end
+	end
+	
+	command restore_parameter_list
+		in formal_parameter_list type:!gt_formal_parameter_list<*> end
+		%existing_file_input_argument
+		%system_error_handler_input_argument
+		
+		%result_xor_resource_error_list_output<result_type:"!gt_parameter_list<*>">
+	end
+	
+	command restore_string_parameter_list
+		%existing_file_input_argument
+		%system_error_handler_input_argument
+		
+		%result_xor_resource_error_output < string_parameter_list >
+	end
+	
+end

@@ -1,0 +1,8 @@
+type servlet_config
+
+	attribute servlet_name type:string end
+	attribute servlet_init_parameters type:string_parameter_list end
+	attribute message_handler type:servlet_message_handler kind:variable setable: all end
+	attribute container_context type:servlet_container_context end
+
+end

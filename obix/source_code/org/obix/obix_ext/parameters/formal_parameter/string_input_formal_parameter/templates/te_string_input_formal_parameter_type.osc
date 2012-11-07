@@ -1,0 +1,11 @@
+template string_input_formal_parameter_type
+
+	param parameter_value_type end
+
+	type {parameter_value_type}_string_input_formal_parameter
+	
+		!gt_string_input_formal_parameter<{parameter_value_type}>
+
+	end
+
+end

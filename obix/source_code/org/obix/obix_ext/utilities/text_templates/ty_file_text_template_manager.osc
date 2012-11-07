@@ -1,0 +1,19 @@
+type file_text_template_manager
+
+	command load_text_from_file
+		%existing_file_input_argument
+		%system_error_handler_input_argument
+		
+		%result_xor_error_output < result_type:string; error_type:file_error >
+	end
+	
+	command replace_variable
+		in variable_name type:simple_non_empty_string end
+		in value type:simple_string end
+	end
+	
+	command get_result
+		out result type:string end
+	end
+	
+end

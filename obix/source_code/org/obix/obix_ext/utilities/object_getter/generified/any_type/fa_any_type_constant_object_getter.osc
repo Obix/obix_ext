@@ -1,0 +1,5 @@
+factory any_type_constant_object_getter type:any_type_object_getter
+
+	!gf_constant_object_getter<any_type>
+	
+end

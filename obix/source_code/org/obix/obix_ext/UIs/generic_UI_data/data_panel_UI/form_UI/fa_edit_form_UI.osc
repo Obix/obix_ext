@@ -1,0 +1,101 @@
+factory edit_form_UI type:edit_form_UI
+
+	command write_as_HTML
+		script
+			se_form_UI_helper.write_as_HTML ( &
+				writer = i_writer &
+				form_UI = this )
+		end
+	end
+
+	creator create kind:in_all end
+
+	test
+		script
+			const mutable_form_UI_item_map item_map = fa_mutable_form_UI_item_map.create
+
+			c_item_map.add ( &
+				key = "name" &
+				item = fa_single_line_text_display.create ( &
+					id = "name" &
+					value = "Albert" ) )
+
+			c_item_map.add ( &
+				key = "city" &
+				item = fa_single_line_text_editor.create ( &
+					id = "city" &
+					default_value = "Unknown" &
+					void_allowed = no &
+					placeholder_text = "enter a city" ) )
+
+			c_item_map.add ( &
+				key = "enum" &
+				item = fa_single_line_text_editor.create ( &
+					id = "enum" &
+					label = "enum field" &
+					tip = "a tip" &
+					default_value = "medium" &
+					void_allowed = no &
+					tab_index = 20 &
+					allowed_values_list = fa_indexed_string_list.create_trio ( item1 = "small"; item2 = "medium"; item3 = "large" ) ) )
+			
+			c_item_map.add ( &
+				key = "helper" &
+				item = fa_single_line_text_editor.create ( &
+					id = "helper" &
+					label = "helper field" &
+					tip = "a helper tip" &
+					default_value = "helper" &
+					void_allowed = yes &
+					tab_index = 10 &
+					example_values_list = fa_indexed_string_list.create_trio ( item1 = "small 100"; item2 = "small 200"; item3 = "small 220" ) ) )
+
+			c_item_map.add ( &
+				key = "age" &
+				item = fa_integer_number_editor.create ( &
+					id = "age" &
+					label = "enter age" &
+					default_value = "51" &
+					void_allowed = no ) )
+
+			c_item_map.add ( &
+				key = "happy" &
+				item = fa_yes_no_editor.create ( &
+					id = "happy" &
+					void_allowed = no ) )
+
+			c_item_map.add ( &
+				key = "text" &
+				item = fa_multi_line_text_editor.create ( &
+					id = "text" &
+					label = "your text" &
+					void_allowed = yes ) )
+
+			c_item_map.add ( &
+				key = "dc" &
+				item = fa_local_date_time_editor.create ( &
+					id = "dc" &
+					label = "date created" &
+					default_value_getter = fa_local_date_time_object_getter.create &
+					void_allowed = no ) )
+
+			const edit_form_UI edit_form_UI = fa_edit_form_UI.create ( &
+				title = "Title" &
+				action_list = void &
+				item_list = c_item_map.make_immutable &
+				submit_action = fa_form_UI_action.create_for_button ( &
+					label = "create_customer" &
+					command_path = "create_customer" &
+					constant_parameter_list = void &
+					ask_confirmation = no &
+					result_div = se_generic_UI_utilities.default_result_div ) )
+				
+			const memory_string_writer writer = fa_memory_string_writer.create
+			c_edit_form_UI.write_as_HTML ( c_writer )
+			// verify c_writer.result compare =v ""
+			
+			// se_desktop_utilities.show_HTML_code_in_default_browser ( HTML_code = c_writer.result )
+		end
+	end
+
+end

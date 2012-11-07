@@ -1,0 +1,71 @@
+factory JSON_scalar_object_writer type:scalar_object_writer
+
+	command write_scalar
+		script
+			case type of i_scalar
+				when simple_string simple_string then
+					i_writer.write ( se_JSON_constants.double_quote_token_encloser )
+					i_writer.write ( se_JSON_utilities.escape_JSON_data ( c_simple_string ) )
+					i_writer.write ( se_JSON_constants.double_quote_token_encloser )
+					
+				when number number then
+					i_writer.write ( c_number.to_string )
+
+				when yes_no yes_no then
+					i_writer.write ( c_yes_no.to_true_false )
+
+				when enumerated enumerated then
+					i_writer.write ( se_JSON_constants.double_quote_token_encloser )
+					i_writer.write ( se_JSON_utilities.escape_JSON_data ( c_enumerated ) )
+					i_writer.write ( se_JSON_constants.double_quote_token_encloser )
+
+				when simple_character simple_character then
+					i_writer.write ( se_JSON_constants.double_quote_token_encloser )
+					i_writer.write ( se_JSON_utilities.escape_JSON_data ( c_simple_character.to_string ) )
+					i_writer.write ( se_JSON_constants.double_quote_token_encloser )
+
+			end case
+		end
+	end
+	
+	creator create kind:in_all end
+
+	
+	test
+		script
+			const memory_string_writer writer = fa_memory_string_writer.create
+			const scalar_object_writer to = co_create
+
+			c_writer.reset
+			to.write_scalar ( &
+				scalar= "qwe" &
+				writer = c_writer )
+			verify c_writer.result compare =v '''"qwe"'''
+
+			c_writer.reset
+			to.write_scalar ( &
+				scalar= 123 &
+				writer = c_writer )
+			verify c_writer.result compare =v "123"
+
+			c_writer.reset
+			to.write_scalar ( &
+				scalar= yes &
+				writer = c_writer )
+			verify c_writer.result compare =v "true"
+
+			c_writer.reset
+			to.write_scalar ( &
+				scalar= 'a' &
+				writer = c_writer )
+			verify c_writer.result compare =v '''"a"'''
+
+			c_writer.reset
+			to.write_scalar ( &
+				scalar= ty_comparator_result.greater &
+				writer = c_writer )
+			verify c_writer.result compare =v '''"greater"'''
+		end
+	end test
+
+end

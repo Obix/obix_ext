@@ -1,0 +1,688 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service GUI_dialogs
+
+	java_header
+		import java.awt.Container;
+		import java.awt.Dialog;
+
+		import javax.swing.border.EmptyBorder;
+		import javax.swing.JEditorPane;
+		import javax.swing.JFrame;
+		import javax.swing.JTextArea;
+		import javax.swing.JScrollPane;
+		import javax.swing.ScrollPaneConstants;
+		import javax.swing.UIManager;
+		
+		import org.obix.obix_core.basics.scalars.string.string_value.fa_string_value;
+		import org.obix.obix_core.basics.scalars.string.se_string_constants;
+		import org.obix.obix_core.directories_and_files.files.absolute_file.fa_file;
+		import org.obix.obix_core.directories_and_files.directories.absolute_directory.fa_directory;
+	end java_header
+
+	// TD to transfer to li_GUI
+
+	/// TD
+		default button doesn't work if WantsInput == false (Java error)
+		keyboard shortcuts for buttons (should use JButtons)
+	end ///
+	
+
+	java
+
+		private static final String a_button_ok = "Ok" ;
+		private static final String a_button_next = "Next >" ;
+		private static final String a_button_finish = "Finish" ;
+		private static final String a_button_yes = "Yes" ;
+		private static final String a_button_no = "No" ;
+
+		private static final String a_button_cancel = "Cancel" ;
+		private static final String a_button_back = "< Back" ;
+
+		private static final String[] a_buttons_ok = new String[] { a_button_ok } ;
+		private static final String[] a_buttons_ok_cancel = new String[] { a_button_ok, a_button_cancel } ;
+		private static final String[] a_buttons_back_ok = new String[] { a_button_back, a_button_ok } ;
+		private static final String[] a_buttons_back_ok_cancel = new String[] { a_button_back, a_button_ok, a_button_cancel } ;
+
+		private static final String[] a_buttons_yes_no = new String[] { a_button_yes, a_button_no } ;
+		private static final String[] a_buttons_yes_no_cancel = new String[] { a_button_yes, a_button_no, a_button_cancel } ;
+		private static final String[] a_buttons_back_yes_no = new String[] { a_button_back, a_button_yes, a_button_no } ;
+		private static final String[] a_buttons_back_yes_no_cancel = new String[] { a_button_back, a_button_yes, a_button_no, a_button_cancel } ;
+		
+		private static final in_enumerated en_response = ty_GUI_dialog_response_kind.en_1;
+		private static final in_enumerated en_cancel_button = ty_GUI_dialog_response_kind.en_2;
+		private static final in_enumerated en_back_button = ty_GUI_dialog_response_kind.en_3;
+		private static final in_enumerated en_window_closed = ty_GUI_dialog_response_kind.en_4;
+		
+		static {
+			try {
+				UIManager.setLookAndFeel ( UIManager.getSystemLookAndFeelClassName() );
+			} catch ( Exception e ) {
+				e.printStackTrace();
+			}
+		}
+
+		private static String[] co_define_options ( boolean i_cancel_button, boolean i_back_button ) {
+
+			if ( ! i_back_button ) {
+				if ( ! i_cancel_button ) {
+					return a_buttons_ok ;
+				}
+				else {
+					return a_buttons_ok_cancel ;
+				}
+			}
+			else {
+				if ( ! i_cancel_button ) {
+					return a_buttons_back_ok ;
+				}
+				else {
+					return a_buttons_back_ok_cancel ;
+				}
+			}
+		}
+
+		private static String[] co_define_options_yes_no ( boolean i_cancel_button, boolean i_back_button ) {
+
+			if ( ! i_back_button ) {
+				if ( ! i_cancel_button ) {
+					return a_buttons_yes_no ;
+				}
+				else {
+					return a_buttons_yes_no_cancel ;
+				}
+			}
+			else {
+				if ( ! i_cancel_button ) {
+					return a_buttons_back_yes_no ;
+				}
+				else {
+					return a_buttons_back_yes_no_cancel ;
+				}
+			}
+		}
+
+		private static class cl_response {
+
+			in_string a_input_value ;
+			in_enumerated a_option_selected ;
+
+			cl_response ( in_string i_input_value, in_enumerated i_option_selected ) {
+				a_input_value = i_input_value ;
+				a_option_selected = i_option_selected ;
+			}
+		}
+
+		private static cl_response co_ask ( javax.swing.JFrame i_frame, Object i_message, String i_title, int i_message_type, javax.swing.Icon i_icon, boolean i_wants_input, boolean i_wants_multi_line_string_input, Object[] i_value_list, Object i_default_value, String[] i_options, Object i_default_option ) {
+
+			// message
+			javax.swing.JOptionPane v_pane = new javax.swing.JOptionPane ( ) ;
+			if ( i_icon == null ) {
+				v_pane.setMessageType ( i_message_type ) ;
+			}
+			else {
+				v_pane.setIcon ( i_icon ) ;
+			}
+			
+			// input field
+			
+			JTextArea text_area = null;
+
+			if ( ! i_wants_multi_line_string_input ) {
+				v_pane.setMessage ( i_message );
+				v_pane.setWantsInput ( i_wants_input ) ;
+				if ( i_wants_input ) {
+					v_pane.setSelectionValues ( i_value_list ) ;
+					v_pane.setInitialSelectionValue ( i_default_value ) ;
+				}
+			} else {
+				text_area = new JTextArea(10,70);
+				if ( i_default_value != null ) {
+					text_area.setText ( i_default_value.toString() );
+				}
+				text_area.setBorder ( javax.swing.border.LineBorder.createBlackLineBorder() );
+				v_pane.setMessage ( text_area ); // TD i_message is NOT DISPLAYED !!!
+				v_pane.setWantsInput ( false );
+			}
+
+			// options (buttons)
+			v_pane.setOptions ( i_options ) ;
+			if ( i_default_option != null ) {
+				// JAVA ERROR: following statement doesn't work if WantsInput == false
+				// e.g. in the case of ask_yes_no
+				v_pane.setInitialValue ( i_default_option ) ;
+			}
+
+/*
+				java.awt.Component[] v_components = v_pane.getComponents() ;
+				for ( int i=1; i<=v_pane.getComponentCount(); i++ ) {
+					java.awt.Component v_component = v_components[i_1] ;
+					if ( v_component instanceof java.awt.Container ) {
+						java.awt.Container v_container = (java.awt.Container) v_component ;
+						java.awt.Component[] v_components_2 = v_container.getComponents() ;
+						for ( int j=1; j<=v_container.getComponentCount(); j++ ) {
+							java.awt.Component v_component_2 = v_components_2[j-1] ;
+							if ( v_component_2 instanceof javax.swing.JButton ) {
+								// do with the button whatever we want
+							}
+						}
+					}
+				}
+*/
+
+/*
+			// show dialog
+			javax.swing.JFrame v_frame = i_frame ;
+			if ( v_frame == null ) {
+				// TD 
+				v_frame = new javax.swing.JFrame() ; // causes deadlock if user switchs to another window (application)
+				v_frame.setVisible(true); // this solves problem, but frame is visible
+				// Java SDK code to create frame
+				//	Frame sharedFrame = 
+				//		(Frame)SwingUtilities.appContextGet(sharedFrameKey);
+				//	if (sharedFrame == null) {
+				//		sharedFrame = SwingUtilities.getSharedOwnerFrame();
+				//		SwingUtilities.appContextPut(sharedFrameKey, sharedFrame);
+				//	}
+				//	return sharedFrame;
+
+				//v_frame = org.obix.obix_core.standard.system.se_system.a_main_window ;
+			}
+			//javax.swing.JDialog v_dialog = v_pane.createDialog ( null, i_title ) ; // VM stays running
+			javax.swing.JDialog v_dialog = v_pane.createDialog ( v_frame, i_title ) ;
+			// v_dialog.setDefaultCloseOperation ( javax.swing.JDialog.DISPOSE_ON_CLOSE ) ; // VM stays running
+*/
+			javax.swing.JDialog v_dialog;
+			if ( i_frame == null ) {
+				v_dialog = v_pane.createDialog ( i_title ) ;
+			} else {
+				v_dialog = v_pane.createDialog ( i_frame, i_title ) ;
+			}
+			v_dialog.setVisible(true);
+
+			// would close application
+/*			if ( i_frame == null ) {
+				v_frame.dispose(); // necessary to stop VM
+			}
+*/
+
+			// define response
+
+			// define how the user exited
+			in_enumerated v_option_selected = en_window_closed ;
+			Object v_option = v_pane.getValue() ;
+			if ( v_option != null ) {
+				if ( v_option == a_button_ok || v_option == a_button_yes || v_option == a_button_no ) {
+					v_option_selected = en_response ;
+				}
+				else if ( v_option == a_button_cancel ) {
+					v_option_selected = en_cancel_button ;
+				}
+				else if ( v_option == a_button_back ) {
+					v_option_selected = en_back_button ;
+				}
+				else if ( v_option.toString().equals ( "-1" ) ) { // -1 = Escape key
+					v_option_selected = en_cancel_button ;
+				}
+			}
+
+			// define the input value
+			in_string v_input_value = null ;
+			if ( v_option_selected == en_response ) {
+				if ( i_wants_multi_line_string_input ) {
+					// new lines in JTextArea are always \n
+					v_input_value = new fa_string ( text_area.getText().replace( "\n", se_string_constants.getCurrent_OS_new_line().java_value()) );
+				} else if ( i_wants_input ) {
+					Object v_java_input_value = v_pane.getInputValue() ;
+					if ( v_java_input_value != null && v_java_input_value != javax.swing.JOptionPane.UNINITIALIZED_VALUE ) {
+						v_input_value = new fa_string ( (String) v_java_input_value ) ;
+					}
+				}
+				else {
+					if ( v_option == a_button_yes ) {
+						v_input_value = new fa_string ( a_button_yes ) ;
+					}
+					else if ( v_option == a_button_no ) {
+						v_input_value = new fa_string ( a_button_no ) ;
+					}
+				}
+			}
+			
+			return new cl_response ( v_input_value, v_option_selected ) ;
+		}
+	end java
+
+	
+	attribute_list type:non_empty_string kind:constant
+
+		attribute default_title_message default: "Information" end
+		attribute default_title_error_message default: "Error!" end
+		attribute default_title_ask default: "Please enter a value!" end
+		attribute default_title_ask_yes_no default: "Please confirm!" end
+		attribute default_title_file default: "Please select a file!" end
+		attribute default_title_directory default: "Please select a directory!" end
+	end
+
+
+	command display_HTML_panel
+		in HTML_code type:string end
+		in window_title type:string voidable:yes default:void end
+		in center_window_on_screen type:yes_no default:yes end
+
+		script
+			java
+				JEditorPane HTML_panel = new JEditorPane ( "text/html", i_HTML_code.java_value() );
+				// HTML_panel.setBorder ( new EmptyBorder ( 0, 0, 0, 0 ) );
+				
+				JScrollPane scroll_panel = new JScrollPane ( 
+					HTML_panel,
+					ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, 
+					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED );
+      
+				JFrame frame = new JFrame ( i_window_title == null ? "" : i_window_title.java_value() );
+				Container content_panel = frame.getContentPane();
+				content_panel.add ( scroll_panel ) ;
+
+				frame.setDefaultCloseOperation ( JFrame.DISPOSE_ON_CLOSE );
+				// frame.setUndecorated(true); // remove borders and buttons; close with Alt-F4
+				frame.pack();
+				if ( i_center_window_on_screen.java_value() ) {
+					frame.setLocationRelativeTo ( null ); // center window
+				}
+				frame.setModalExclusionType ( Dialog.ModalExclusionType.APPLICATION_EXCLUDE  ); // don't block this window by modal dialogs
+				frame.setVisible ( true );
+			end java
+		end
+
+///		
+		test
+			script
+				const string HTML_code = '''<h2>Header 2</h2>
+<table border="1" cellspacing="0" cellpadding="2">
+  <tr>
+    <th scope="col">Row</th>
+    <th scope="col">col 1</th>
+    <th scope="col">col 2</th>
+  </tr>
+  <tr>
+    <th>1</th>
+    <td>d ld ksd fsd;f gd <strong>bold</strong> bfg</td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>2</th>
+    <td><em>italic</em></td>
+    <td></td>
+  </tr>
+  <tr>
+    <th>3</th>
+    <td bgcolor="#FFFFCC">yellow background</td>
+    <td></td>
+  </tr>
+</table>'''
+				test HTML_code = c_HTML_code; window_title = "HTML test"
+			end
+		end
+end ///
+
+	end
+
+	
+	command message
+		in message type:string end
+
+		script
+			java
+				co_ask ( null, i_message.getValue().java_value(), a_default_title_message.getValue().java_value(), javax.swing.JOptionPane.INFORMATION_MESSAGE, null, false, false, null, null, a_buttons_ok, a_button_ok ) ;
+			end java
+		end
+	end
+
+
+	command error_message
+		in message type:string end
+
+		script
+			java
+				co_ask ( null, i_message.getValue().java_value(), a_default_title_error_message.getValue().java_value(), javax.swing.JOptionPane.ERROR_MESSAGE, null, false, false, null, null, a_buttons_ok, a_button_ok ) ;
+			end java
+		end
+	end
+
+
+	command ask_yes_no
+
+		// in parent_window type:window voidable:yes default: void end
+		in message type:string end
+		in title type:string default: a_default_title_ask_yes_no end
+		//in icon type:icon voidable:yes default: void end
+		//in default_value type:yes_no voidable:yes default: void end // doesn't work!, see above
+		in cancel_permitted type:yes_no default:no end
+		in back_button type:yes_no default:no end
+
+		out response type:yes_no voidable:yes end
+		out response_kind type:ty_GUI_dialog_response_kind.enumerated end
+		out_check
+			script
+				check co_check_output ( i_cancel_permitted = i_cancel_permitted i_back_button = i_back_button i_response_kind = i_response_kind i_response = i_response )
+			end script
+		end out_check
+
+		script
+			repeat forever
+				java
+					// cl_response v_response = co_ask ( null, i_message.getValue().java_value(), i_title.getValue().java_value(), javax.swing.JOptionPane.QUESTION_MESSAGE, i_icon == null ? null : i_icon.getValue().java_value(), false, null, null, co_define_options_yes_no ( i_cancel_permitted.java_value(), i_back_button.java_value() ), i_default_value == null ? null : i_default_value.java_value() ? a_button_yes : a_button_no ) ;
+					//cl_response v_response = co_ask ( null, i_message.getValue().java_value(), i_title.getValue().java_value(), javax.swing.JOptionPane.QUESTION_MESSAGE, i_icon == null ? null : i_icon.java_value(), false, null, null, co_define_options_yes_no ( i_cancel_permitted.java_value(), i_back_button.java_value() ), null ) ;
+					cl_response v_response = co_ask ( null, i_message.getValue().java_value(), i_title.getValue().java_value(), javax.swing.JOptionPane.QUESTION_MESSAGE, null, false, false, null, null, co_define_options_yes_no ( i_cancel_permitted.java_value(), i_back_button.java_value() ), null ) ;
+					o_response = null ;
+					o_response_kind = v_response.a_option_selected ;
+					if ( o_response_kind == en_response ) {
+						if ( v_response.a_input_value.getValue().java_value() == a_button_yes ) {
+							o_response = fa_yes_no.a_yes ;
+						}
+						else if ( v_response.a_input_value.getValue().java_value() == a_button_no ) {
+							o_response = fa_yes_no.a_no ;
+						}
+					}
+				end java
+				if co_terminated ( i_cancel_permitted = i_cancel_permitted i_back_button = i_back_button i_response_kind = o_response_kind ) then
+					exit repeat
+				end if
+			end repeat
+		end script
+	end command
+
+
+	command ask_item_from_list
+
+		// in parent_window type:window voidable:yes default: void end
+		in message type:string end
+		in title type:string default: a_default_title_ask end
+		//in icon type:icon voidable:yes default: void end
+		in list type:indexed_any_type_list &
+			check: not i_list.is_empty error_message: "List is empty." end
+		in default_item type:any_type voidable:yes default:void end
+		in cancel_permitted type:yes_no default:no end
+		in back_button type:yes_no default:no end
+
+		out response type:any_type voidable:yes end
+		out response_kind type:ty_GUI_dialog_response_kind.enumerated end
+		out_check
+			script
+				check co_check_output ( i_cancel_permitted = i_cancel_permitted i_back_button = i_back_button i_response_kind = i_response_kind i_response = i_response )
+			end script
+		end out_check
+
+		script
+			repeat forever
+				java
+
+					int v_item_count = i_list.getItem_count().getValue().java_value() ;
+					String v_description ;
+					String[] v_description_list = new String[v_item_count] ;
+					Object v_default_value = null ;
+					for ( int i = 1; i <= v_item_count; i++ ) {
+						in_any_type v_item = (in_any_type) i_list.co_item_at_index_command ( new fa_positive32 ( i ) ) ;
+						v_description = v_item.co_to_string_command().getValue().java_value() ;
+						v_description_list[i-1] = v_description ;
+						if ( i_default_item != null && i_default_item == v_item ) {
+							// Java error: if previous item has same string, then previous item will be
+							// default value
+							v_default_value = v_description ;
+						}
+					}
+					
+					//cl_response v_response = co_ask ( null, i_message.getValue().java_value(), i_title.getValue().java_value(), javax.swing.JOptionPane.QUESTION_MESSAGE, i_icon == null ? null : i_icon.java_value(), true, v_description_list, v_default_value, co_define_options ( i_cancel_permitted.java_value(), i_back_button.java_value() ), a_button_ok ) ;
+					cl_response v_response = co_ask ( null, i_message.getValue().java_value(), i_title.getValue().java_value(), javax.swing.JOptionPane.QUESTION_MESSAGE, null, true, false, v_description_list, v_default_value, co_define_options ( i_cancel_permitted.java_value(), i_back_button.java_value() ), a_button_ok ) ;
+
+					o_response = null ;
+					if ( v_response.a_input_value != null ) {
+						String v_selected_string = v_response.a_input_value.getValue().java_value() ;
+						for ( int i = 1; i <= v_item_count; i++ ) {
+							if ( v_selected_string == v_description_list[i-1] ) {
+								o_response = (in_any_type) i_list.co_item_at_index_command ( new fa_positive32 ( i ) ) ;
+							}
+						}
+					}
+					o_response_kind = v_response.a_option_selected ;
+
+				end java
+
+				if co_terminated ( i_cancel_permitted = i_cancel_permitted i_back_button = i_back_button i_response_kind = o_response_kind ) then
+					exit repeat
+				end if
+			end repeat
+		end script
+	end command
+
+
+	command ask_string
+
+		// in parent_window type:window voidable:yes default: void end
+		in message type:string end
+		in title type:string default: a_default_title_ask end
+		//in icon type:icon voidable:yes default: void end
+		in default_value type:string voidable:yes default: void end
+		in is_multi_line_string type:yes_no default: no end
+		// in value_verifier type:object_checker voidable:yes default:void end
+		in cancel_permitted type:yes_no default:no end
+		in back_button type:yes_no default:no end
+
+		out response type:string voidable:yes end
+		out response_kind type:ty_GUI_dialog_response_kind.enumerated end
+		out_check
+			script
+				check co_check_output ( i_cancel_permitted = i_cancel_permitted i_back_button = i_back_button i_response_kind = i_response_kind i_response = i_response )
+			end script
+		end out_check
+
+		script
+			repeat forever
+
+				java
+					//cl_response v_response = co_ask ( null, i_message.getValue().java_value(), i_title.getValue().java_value(), javax.swing.JOptionPane.QUESTION_MESSAGE, i_icon == null ? null : i_icon.java_value(), true, null, i_default_value == null ? null : i_default_value.getValue().java_value(), co_define_options ( i_cancel_permitted.java_value(), i_back_button.java_value() ), a_button_ok ) ;
+					cl_response v_response = co_ask ( null, i_message.getValue().java_value(), i_title.getValue().java_value(), javax.swing.JOptionPane.QUESTION_MESSAGE, null, true, i_is_multi_line_string.java_value(), null, i_default_value == null ? null : i_default_value.getValue().java_value(), co_define_options ( i_cancel_permitted.java_value(), i_back_button.java_value() ), a_button_ok ) ;
+					o_response = v_response.a_input_value ;
+					o_response_kind = v_response.a_option_selected ;
+				end java
+
+				if co_terminated ( i_cancel_permitted = i_cancel_permitted i_back_button = i_back_button i_response_kind = o_response_kind ) then
+					exit repeat
+				end if
+			end repeat
+		end script
+	end command
+
+
+	command ask_file
+
+		// in parent_window type:window voidable:yes default: void end
+		in title type:string default: a_default_title_file end
+		// in filter type:file_filter voidable:yes default: void end
+		in starting_directory type:directory voidable:yes &
+			check: i_starting_directory =r void or i_starting_directory.exists default: void end
+		in default_file type:file voidable:yes &
+			check: i_default_file =r void or i_default_file.exists default: void end
+		// in value_verifier type:object_checker voidable:yes default:void end
+		in ok_button_text type:string default: "Ok" end
+		in cancel_permitted type:yes_no default:no end
+		// in back_button type:yes_no default:no end
+
+		out response type:file voidable:yes end
+		out response_kind type:ty_GUI_dialog_response_kind.enumerated end
+		out_check
+			script
+				check co_check_output ( i_cancel_permitted = i_cancel_permitted i_back_button = no i_response_kind = i_response_kind i_response = i_response )
+			end script
+		end out_check
+
+		script
+			repeat forever
+
+				java
+					javax.swing.JFileChooser v_file_chooser = new javax.swing.JFileChooser() ;
+					if ( i_starting_directory != null ) {
+						v_file_chooser.setCurrentDirectory ( new java.io.File ( i_starting_directory.getValue().java_value() ) ) ;
+					}
+					if ( i_default_file != null ) {
+						v_file_chooser.setSelectedFile ( new java.io.File ( i_default_file.getValue().java_value() ) ) ;
+					}
+					v_file_chooser.setFileSelectionMode ( javax.swing.JFileChooser.FILES_ONLY ) ;
+					v_file_chooser.setDialogTitle ( i_title.getValue().java_value() ) ;
+					v_file_chooser.setApproveButtonText ( i_ok_button_text.getValue().java_value() ) ;
+					//int v_result = v_file_chooser.showOpenDialog ( org.obix.obix_core.standard.system.se_system.a_main_window ) ; // TD i_parent_window
+					int v_result = v_file_chooser.showOpenDialog ( null ) ; // TD i_parent_window
+					if ( v_result == javax.swing.JFileChooser.APPROVE_OPTION ) {
+						// o_response = fa_file.co_create_command ( new fa_string_value ( v_file_chooser.getSelectedFile().getAbsolutePath() ) );
+						o_response = fa_file.co_create_command ( new fa_string_value ( v_file_chooser.getSelectedFile().getCanonicalPath() ) );
+						o_response_kind = en_response ;
+					}
+					else {
+						o_response = null ;
+						o_response_kind = en_cancel_button ;
+					}
+				end java
+
+				if co_terminated ( i_cancel_permitted = i_cancel_permitted i_back_button = no i_response_kind = o_response_kind ) then
+					exit repeat
+				end if
+			end repeat
+		end script
+	end command
+
+
+	command ask_directory
+
+		// in parent_window type:window voidable:yes default: void end
+		in title type:string default: a_default_title_directory end
+		// in filter type:file_filter voidable:yes default: void end
+		in starting_directory type:directory voidable:yes &
+			check: i_starting_directory =r void or i_starting_directory.exists default: void end
+		in default_directory type:directory voidable:yes &
+			check: i_default_directory =r void or i_default_directory.exists default: void end
+		// in value_verifier type:object_checker voidable:yes default:void end
+		in ok_button_text type:string default: "Ok" end
+		in cancel_permitted type:yes_no default:no end
+		// in back_button type:yes_no default:no end
+
+		out response type:directory voidable:yes end
+		out response_kind type:ty_GUI_dialog_response_kind.enumerated end
+		out_check
+			script
+				check co_check_output ( i_cancel_permitted = i_cancel_permitted i_back_button = no i_response_kind = i_response_kind i_response = i_response )
+			end script
+		end out_check
+
+		script
+			repeat forever
+
+				java
+					javax.swing.JFileChooser v_file_chooser = new javax.swing.JFileChooser() ;
+					if ( i_starting_directory != null ) {
+						v_file_chooser.setCurrentDirectory ( new java.io.File ( i_starting_directory.getValue().java_value() ) ) ;
+					}
+					if ( i_default_directory != null ) {
+						// v_file_chooser.setSelectedFile ( new java.io.File ( i_default_directory.getValue().java_value() ) ) ; Java error: doesn't work
+						v_file_chooser.setCurrentDirectory ( new java.io.File ( i_default_directory.getValue().java_value() ) ) ;
+					}
+					v_file_chooser.setFileSelectionMode ( javax.swing.JFileChooser.DIRECTORIES_ONLY ) ;
+					v_file_chooser.setDialogTitle ( i_title.getValue().java_value() ) ;
+					v_file_chooser.setApproveButtonText ( i_ok_button_text.getValue().java_value() ) ;
+					//int v_result = v_file_chooser.showOpenDialog ( org.obix.obix_core.standard.system.se_system.a_main_window ) ; // TD i_parent_window
+					int v_result = v_file_chooser.showOpenDialog ( null ) ; // TD i_parent_window
+					if ( v_result == javax.swing.JFileChooser.APPROVE_OPTION ) {
+						// o_response = fa_directory.co_create_command ( ( new fa_string_value ( v_file_chooser.getSelectedFile().getAbsolutePath() ) ) ;
+						o_response = fa_directory.co_create_command ( new fa_string_value ( v_file_chooser.getSelectedFile().getCanonicalPath() ) ) ;
+						o_response_kind = en_response ;
+					}
+					else {
+						o_response = null ;
+						o_response_kind = en_cancel_button ;
+					}
+				end java
+
+				if co_terminated ( i_cancel_permitted = i_cancel_permitted i_back_button = no i_response_kind = o_response_kind ) then
+					exit repeat
+				end if
+			end repeat
+		end script
+	end command
+
+
+	command_list private:yes
+
+		command co_check_output
+			in i_cancel_permitted type:yes_no end
+			in i_back_button type:yes_no end
+			in i_response_kind type:ty_GUI_dialog_response_kind.enumerated end
+			in i_response type:ty_any_type voidable:yes end
+
+			out o_ok type:yes_no end
+
+			script
+				if not i_cancel_permitted and not i_back_button then
+					if not ( i_response_kind =v ty_GUI_dialog_response_kind.response and i_response #r void ) then
+						o_ok = no
+						exit script
+					end if
+				end if
+				if i_response_kind #v ty_GUI_dialog_response_kind.response then
+					if i_response #r void then
+						o_ok = no
+						exit script
+					end if
+				end if
+				o_ok = yes
+			end script
+		end command
+
+		command co_terminated
+			in i_cancel_permitted type:yes_no end
+			in i_back_button type:yes_no end
+			in i_response_kind type:ty_GUI_dialog_response_kind.enumerated end
+			// in value_verifier type:object_checker voidable:yes default:void end
+
+			out o_terminated type:yes_no end
+
+			script
+				if ( i_cancel_permitted and i_response_kind #v ty_GUI_dialog_response_kind.response ) or ( i_back_button and i_response_kind =v ty_GUI_dialog_response_kind.back_button ) then
+					o_terminated = yes
+				else
+					o_terminated = i_response_kind =v ty_GUI_dialog_response_kind.response
+					if not o_terminated then
+						co_message ( "A valid value is required!" & se_string_constants.current_OS_new_line & "Please enter a value!" )
+					end if
+				end if
+			end script
+		end command
+
+	end command_list
+///	TD
+	command ask_ok
+	command ask_integer
+	command ask_float
+	command ask_character
+	command ask_date
+	command ask_time
+	command ask_date_time
+	command ask_color
+	command ask_enumerated
+	command ask_customized
+end ///
+
+	test
+		script
+///
+			const string r = co_ask_string.response ( message = "Enter a value"; title = "Enter a text"; default_value = '''qwe
+asd'''; is_multi_line_string = yes )
+			se_system.out.write_line ( string = r )
+end ///
+		end
+	end
+
+end service

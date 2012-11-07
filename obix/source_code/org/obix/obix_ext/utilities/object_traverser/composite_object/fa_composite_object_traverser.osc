@@ -1,0 +1,38 @@
+factory composite_object_traverser type:composite_object_traverser
+
+	command traverse_composite_object
+		script
+			const any_type_object_to_field_list_converter attributes_to_fields_converter = &
+				iif i_attributes_to_field_list_converter #r void &
+				then i_attributes_to_field_list_converter &
+				else fa_any_type_object_to_field_list_converter.create ( &
+					type = se_reflection.type_of_object ( i_object ) &
+					include_readonly_attributes = no ) end if
+			const positive32 field_count = fa_positive32.create ( c_attributes_to_fields_converter.field_description_map.item_count.value )
+
+			i_event_handler.on_composite_object_start ( &
+				object = i_object &
+				field_count = c_field_count )
+
+			const indexed_any_type_list field_list = c_attributes_to_fields_converter.convert ( i_object )
+			const !iterator<object_field_description> field_description_iterator = c_attributes_to_fields_converter.field_description_map.item_iterator
+			repeat for each any_type field in c_field_list counter:field_index
+				const object_field_description field_description = c_field_description_iterator.next
+				i_event_handler.on_composite_object_field ( &
+					field_id = c_field_description.id  &
+					field_label = iif c_field_description.label #r void then c_field_description.label else se_generic_UI_utilities.convert_id_to_label ( c_field_description.id ) end if &
+					field_value = c_field &
+					field_index = c_field_index &
+					is_last_field = c_field_index =v c_field_list.item_count )
+			end repeat
+
+			i_event_handler.on_composite_object_end ( &
+				object = i_object &
+				field_count = c_field_count )
+		end
+	end
+		
+
+	creator create kind:in_all end
+	
+end

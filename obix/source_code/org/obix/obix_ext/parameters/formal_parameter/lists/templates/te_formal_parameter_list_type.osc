@@ -1,0 +1,11 @@
+template formal_parameter_list_type
+
+	param parameter_value_type end
+
+	type {parameter_value_type}_formal_parameter_list
+
+		!gt_formal_parameter_list<{parameter_value_type}>
+
+	end
+	
+end

@@ -1,0 +1,40 @@
+generic type mutable_parameter_list
+
+	param parameter_value_type end
+	
+	type
+
+		inherit !collection<!gt_parameter<{parameter_value_type}>> end
+	
+		command contains_parameter
+			in i_id type:parameter_id end
+			
+			out result type:yes_no end
+		end
+		
+		command get_parameter_if_contained
+			in i_id type:parameter_id end
+			
+			out result type:!gt_parameter<{parameter_value_type}> voidable:yes end
+		end
+		
+		command add
+			in parameter type:!gt_parameter<{parameter_value_type}> check: not i_object_.contains_parameter ( i_parameter.a_id ) end
+		end
+	
+		command add_2
+			in i_id type:parameter_id check: not i_object_.contains_parameter ( i_id ) end
+			in value type:{parameter_value_type} voidable:yes end
+		end
+	
+		command add_or_replace
+			in parameter type:!gt_parameter<{parameter_value_type}> end
+		end
+	
+		command make_immutable
+			out result type:!gt_parameter_list<{parameter_value_type}> end
+		end
+		
+	end
+
+end

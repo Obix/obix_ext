@@ -1,0 +1,16 @@
+service test_utility_commands
+
+	command append_scalars
+		in string type:string end
+		in number type:positive32 default:100 end
+		in character type:character end
+		in yes_no type:yes_no end
+		
+		%result_xor_system_error_output < string >
+		
+		script
+			o_result = i_string & i_number.to_string & i_character.to_string & i_yes_no.to_string
+		end
+	end
+
+end

@@ -1,0 +1,299 @@
+service JPA_utilities
+
+	java_header
+		import java.util.Collections;
+		import java.util.List;
+
+		import javax.persistence.EntityManager;
+		import javax.persistence.EntityManagerFactory;
+		import javax.persistence.EntityTransaction;
+		import javax.persistence.Persistence;
+		import javax.persistence.RollbackException;
+		import javax.persistence.Query;
+
+		import org.obix.obix_core.collections.java.fa_java_raw_list_wrapper;
+		import org.obix.obix_core.collections.java.fa_java_unmodifiable_list_wrapper;
+		import org.obix.obix_core.java.fa_java_exception;
+		import org.obix.obix_core.java.se_java_utilities;
+		import org.obix.obix_core.system.se_system;
+		import org.obix.obix_core.system.se_system_utilities;
+	end java_header
+
+	java
+		private static EntityManagerFactory a_EMF;
+		private static EntityManagerFactory get_EMF() {
+			if ( a_EMF == null ) {
+				co_set_EMF_command ( se_system_utilities.getDefault_system_error_handler() );
+			}
+			return a_EMF;
+		}
+			
+		private static EntityManager get_new_entity_manager() {
+			return get_EMF().createEntityManager();
+		}
+		
+		public static <T> T get_by_primary_key ( Class<T> entity_class, Object primary_key ) {
+
+			EntityManager entity_manager = get_new_entity_manager();
+			T result = entity_manager.find ( entity_class, primary_key );
+			entity_manager.close();
+			
+			return result;
+		}
+		
+		private static EntityManager begin_new_transaction() {
+
+			EntityManager entity_manager = get_new_entity_manager();
+			EntityTransaction transaction = entity_manager.getTransaction();
+			transaction.begin();
+			return entity_manager;
+		}
+
+		private static void commit_transaction_and_close ( EntityManager entity_manager ) {
+
+			EntityTransaction transaction = entity_manager.getTransaction();
+			transaction.commit();
+			entity_manager.close();
+		}
+
+	end java
+	
+	command store_new_object
+		in object type:any_type end
+		%system_error_handler_input_argument
+		
+		%error_output_argument < JPA_persist_object_error >
+		
+		script
+			var java_exception java_exception = void
+			java
+				EntityManager entity_manager = null;
+				try {
+					entity_manager = begin_new_transaction();
+					entity_manager.persist ( i_object );
+					commit_transaction_and_close ( entity_manager );
+                } catch ( Exception e ) {
+					if ( entity_manager != null ) {
+						entity_manager.close();
+					}
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_JPA_persist_object_error.create ( &
+					description = """Object '{{i_object.to_string}}' could not be persisted. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = void &
+					object = i_object )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+	
+	command update_object
+		in object type:any_type end
+		%system_error_handler_input_argument
+		
+		%error_output_argument < JPA_persist_object_error >
+		
+		script
+			var java_exception java_exception = void
+			java
+				EntityManager entity_manager = null;
+				try {
+					entity_manager = begin_new_transaction();
+					entity_manager.merge ( i_object );
+					commit_transaction_and_close ( entity_manager );
+                } catch ( Exception e ) {
+					if ( entity_manager != null ) {
+						entity_manager.close();
+					}
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_JPA_persist_object_error.create ( &
+					description = """Object '{{i_object.to_string}}' could not be updated. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = void &
+					object = i_object )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+	
+	command remove_object
+		in object type:any_type end
+		%system_error_handler_input_argument
+		
+		%error_output_argument < JPA_remove_object_error >
+		
+		script
+			var java_exception java_exception = void
+			java
+				EntityManager entity_manager = null;
+				try {
+					entity_manager = begin_new_transaction();
+
+					// entity_manager.remove ( i_object );
+					Object o = entity_manager.merge ( i_object );
+					entity_manager.remove ( o );
+
+					commit_transaction_and_close ( entity_manager );
+                } catch ( Exception e ) {
+					if ( entity_manager != null ) {
+						entity_manager.close();
+					}
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_JPA_remove_object_error.create ( &
+					description = """Object '{{i_object.to_string}}' could not be removed. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = void &
+					object = i_object )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+	
+	command execute_query
+		in query type:string end
+		in is_native_query type:yes_no default:no end
+		in row_start_index type:positive32 voidable:yes default:void end
+		in max_result_rows type:positive32 voidable:yes default:void end
+		%system_error_handler_input_argument
+		
+		%result_xor_error_output <result_type:java_unmodifiable_list_wrapper; error_type:JPA_execute_query_error>
+
+		script
+			var java_raw_list_wrapper java_raw_list_wrapper
+			co_execute_raw_query ( &
+				query = i_query &
+				is_native_query = i_is_native_query &
+				row_start_index = i_row_start_index &
+				max_result_rows = i_max_result_rows &
+				error_handler = i_error_handler ) &
+				( v_java_raw_list_wrapper = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+			
+			var java_exception java_exception = void
+			java
+				try {
+					// all items in v_java_raw_list_wrapper (should) contain objects of type in_any_type
+					// -> convert List to List<in_any_type> and use se_java_utilities.unchecked_cast in order to suppres Java compiler warnings
+					List<in_any_type> any_type_list = se_java_utilities.unchecked_cast ( v_java_raw_list_wrapper.java_list() );
+					o_result = new fa_java_unmodifiable_list_wrapper ( Collections.unmodifiableList ( any_type_list ) );
+                } catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+			if v_java_exception #r void then
+				o_result = void
+				o_error = fa_JPA_execute_query_error.create ( &
+					description = """Query '{{i_query}}' could not be executed. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = void &
+					query = i_query )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+	
+	command execute_raw_query
+		in query type:string end
+		in is_native_query type:yes_no default:no end
+		in row_start_index type:positive32 voidable:yes default:void end
+		in max_result_rows type:positive32 voidable:yes default:void end
+		%system_error_handler_input_argument
+		
+		%result_xor_error_output <result_type:java_raw_list_wrapper; error_type:JPA_execute_query_error>
+
+		script
+			var java_exception java_exception = void
+			java
+				EntityManager entity_manager = null;
+				try {
+					entity_manager = get_new_entity_manager();
+
+					String query_string = i_query.getValue().java_value();
+					Query query = i_is_native_query.java_value() ? 
+						entity_manager.createNativeQuery ( query_string ) :
+						entity_manager.createQuery ( query_string );
+
+					if ( i_row_start_index != null ) {
+						query.setFirstResult ( i_row_start_index.getValue().java_value() - 1 );
+					}
+
+					if ( i_max_result_rows != null ) {
+						query.setMaxResults ( i_max_result_rows.getValue().java_value() );
+					}
+
+					List list = query.getResultList();
+					entity_manager.close();
+					
+					o_result = new fa_java_raw_list_wrapper ( list );
+                } catch ( Exception e ) {
+					if ( entity_manager != null ) {
+						entity_manager.close();
+					}
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_result = void
+				o_error = fa_JPA_execute_query_error.create ( &
+					description = """Query '{{i_query}}' could not be executed. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = void &
+					query = i_query )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+	
+	
+	command_list private:yes
+
+		command set_EMF
+			%system_error_handler_input_argument
+			
+			%error_output_argument < JPA_error >
+
+			script
+				var java_exception java_exception = void
+				java
+					try {
+						a_EMF = Persistence.createEntityManagerFactory ( se_JPA_constants.getPersistence_unit_name().java_value() );
+					} catch ( Exception e ) {
+						v_java_exception = new fa_java_exception ( e );
+					}
+				end java
+
+				if v_java_exception #r void then
+					o_error = fa_JPA_error.create ( &
+						description = """Could not create a connection to persistence unit '{{se_JPA_constants.persistence_unit_name}}'. Reason:
+	{{v_java_exception.message}}""" &
+						java_exception = v_java_exception &
+						resource = void )
+					i_error_handler.handle_system_error ( o_error )
+				end if
+			end
+		end
+		
+	end command_list
+	
+end

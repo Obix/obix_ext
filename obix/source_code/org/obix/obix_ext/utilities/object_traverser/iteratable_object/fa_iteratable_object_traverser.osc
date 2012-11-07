@@ -1,0 +1,137 @@
+factory iteratable_object_traverser type:iteratable_object_traverser
+
+	command traverse_iteratable_object
+		script
+			const iteratable_object_traverser_config conf = &
+				iif i_config #r void then i_config &
+				else a_default_config end if
+				
+			const any_type_object_to_field_list_converter item_to_fields_converter = &
+				iif i_item_to_field_list_converter #r void &
+				then i_item_to_field_list_converter &
+				else fa_any_type_object_to_field_list_converter.create ( &
+					type = se_reflection.type_of_iteratable_items ( i_iteratable ) &
+					include_readonly_attributes = no ) end if
+			const positive32 column_count = fa_positive32.create ( c_item_to_fields_converter.field_description_map.item_count.value )
+		
+			// how many rows?
+			var zero_positive32 rows_in_iteratable
+			var zero_positive32 rows_to_traverse
+			case type of i_iteratable
+				when !mutable_or_immutable_collection<*> collection then
+					v_rows_in_iteratable = c_collection.item_count
+					if c_conf.start_row_index <= v_rows_in_iteratable then
+						v_rows_to_traverse = v_rows_in_iteratable - c_conf.start_row_index + 1
+					else
+						v_rows_to_traverse = 0
+					end if
+					if c_conf.max_rows_to_generate #r void and v_rows_to_traverse > c_conf.max_rows_to_generate then
+						v_rows_to_traverse = c_conf.max_rows_to_generate
+					end if
+				otherwise
+			end case
+
+			// table start
+			
+			i_event_handler.on_table_start ( &
+				iteratable = i_iteratable &
+				title_object = i_iteratable.to_string &
+				row_count = v_rows_to_traverse &
+				column_count = c_column_count )
+				
+			// table header
+			
+			if c_conf.generate_table_header then
+				i_event_handler.on_table_header_start ( &
+					row_count = v_rows_to_traverse &
+					column_count = c_column_count )
+					
+				if c_conf.generate_row_number_column
+					i_event_handler.on_row_number_header
+				end if
+				
+				repeat for each item object_field_description column_description in c_item_to_fields_converter.field_description_map counter:column_index
+					i_event_handler.on_table_header_column ( &
+						column_header_object = c_column_description.label &
+						column_index = c_column_index &
+						is_last_column = c_column_index =v c_column_count )
+				end repeat
+
+				i_event_handler.on_table_header_end ( &
+					row_count = v_rows_to_traverse &
+					column_count = c_column_count )
+			end if
+
+			// traverse rows
+
+			i_event_handler.on_table_body_start ( &
+				row_count = v_rows_to_traverse &
+				column_count = c_column_count )
+
+			var zero_positive32 rows_traversed = 0
+			var positive32 table_row_index = 1
+			const !iterator<*> iterator = i_iteratable.item_iterator
+			repeat while c_iterator.has_next counter:iteratable_row_index
+
+				// TD for better performance: if type is !indexed_list<*>: should use index to iterate
+				if c_iteratable_row_index < c_conf.start_row_index then
+					next repeat
+				end if
+
+				const any_type row_object = c_iterator.next
+				
+				const yes_no is_last_row = not c_iterator.has_next or &
+					c_conf.max_rows_to_generate #r void and v_table_row_index >= c_conf.max_rows_to_generate
+
+				i_event_handler.on_table_row_start ( &
+					row_object = c_row_object &
+					row_index = v_table_row_index &
+					is_last_row = c_is_last_row )
+				
+				if c_conf.generate_row_number_column
+					i_event_handler.on_row_number ( &
+						row_number = v_table_row_index &
+						is_last_row = c_is_last_row )
+				end if
+				
+				const indexed_any_type_list field_list = c_item_to_fields_converter.convert ( c_row_object )
+				repeat for each any_type field in c_field_list counter:field_index
+					i_event_handler.on_table_field_object ( &
+						field_object = c_field &
+						row_index = v_table_row_index &
+						column_index = c_field_index &
+						is_last_row = c_is_last_row &
+						is_last_column = c_field_index =v c_field_list.item_count )
+				end repeat
+
+				i_event_handler.on_table_row_end ( &
+					row_object = c_row_object &
+					row_index = v_table_row_index &
+					is_last_row = c_is_last_row )
+					
+				v_rows_traversed = v_rows_traversed + 1
+				v_table_row_index = v_table_row_index + 1
+
+				if c_is_last_row then
+					if c_iterator.has_next then
+						i_event_handler.on_table_abort ( &
+							rows_traversed_count = v_rows_traversed &
+							total_rows_count = v_rows_in_iteratable )
+					end if
+					exit repeat
+				end if
+			end repeat
+
+			i_event_handler.on_table_body_end ( &
+				row_count = v_rows_traversed &
+				column_count = c_column_count )
+
+			i_event_handler.on_table_end ( &
+				row_count = v_rows_traversed )
+		end
+	end
+		
+
+	creator create kind:in_all end
+	
+end

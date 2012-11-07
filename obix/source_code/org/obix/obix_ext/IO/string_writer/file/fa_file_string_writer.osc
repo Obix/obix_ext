@@ -1,0 +1,301 @@
+factory file_string_writer type:file_string_writer
+
+	java_header
+		import java.io.FileOutputStream;
+		import java.io.FileNotFoundException;
+		import java.io.OutputStreamWriter;
+        import java.io.PrintWriter;
+		import java.io.UnsupportedEncodingException;
+
+		import java.lang.SecurityException;
+		
+		import org.obix.obix_core.directories_and_files.files.absolute_file.in_file;
+		import org.obix.obix_core.java.fa_java_exception;
+		import org.obix.obix_core.IO.character_set.in_supported_character_set;
+
+		import org.obix.obix_ext.IO.string_writer.fa_java_PrintWriter_string_writer;
+	end java_header
+	
+	java
+		private static fa_java_PrintWriter_string_writer create_delegator ( in_file i_file, in_supported_character_set i_character_set, in_yes_no i_auto_flush, in_yes_no i_append_mode ) 
+			throws FileNotFoundException, SecurityException, UnsupportedEncodingException {
+			FileOutputStream file_output_stream = new FileOutputStream ( i_file.getValue().java_value(), i_append_mode.java_value() );
+			OutputStreamWriter output_stream_writer = 
+				i_character_set == null ?
+				new OutputStreamWriter ( file_output_stream ) :
+				new OutputStreamWriter ( file_output_stream, i_character_set.getValue().java_value() );
+			PrintWriter print_writer = new PrintWriter ( output_stream_writer, i_auto_flush.java_value() );
+			return new fa_java_PrintWriter_string_writer ( print_writer );
+		}
+	end java
+
+	attribute delegator type:simple_string_writer private:yes end
+
+	command write
+		script
+			a_delegator.write ( i_string )
+		end
+	end
+
+	command write_line
+		script
+			a_delegator.write_line ( i_string  )
+		end
+	end
+
+	command write_new_line
+		script
+			a_delegator.write_new_line
+		end
+	end
+	
+	command close
+		script
+			a_delegator.close ( i_error_handler )
+		end
+	end
+
+	command flush
+		script
+			a_delegator.flush ( i_error_handler )
+		end
+	end
+
+	
+	creator create
+		%new_or_existing_file_input_argument
+		in file_write_mode type:file_write_mode.enumerated end
+		%supported_character_set_input_argument
+		in auto_flush type:yes_no default:no end
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output < file_string_writer >
+
+		script
+			if i_file_write_mode =r ty_file_write_mode.create_or_replace_file then
+				co_create_for_new_or_existing_file ( &
+					file = i_file &
+					character_set = i_character_set &
+					append_mode = no &
+					auto_flush = i_auto_flush &
+					error_handler = i_error_handler ) &
+					( o_result = result &
+					o_error = error )
+
+			else if i_file_write_mode =r ty_file_write_mode.create_or_append_to_file then
+				co_create_for_new_or_existing_file ( &
+					file = i_file &
+					character_set = i_character_set &
+					append_mode = yes &
+					auto_flush = i_auto_flush &
+					error_handler = i_error_handler ) &
+					( o_result = result &
+					o_error = error )
+
+			else if i_file_write_mode =r ty_file_write_mode.create_file then
+				co_create_for_new_file ( &
+					file = i_file &
+					character_set = i_character_set &
+					auto_flush = i_auto_flush &
+					error_handler = i_error_handler ) &
+					( o_result = result &
+					o_error = error )
+
+			else if i_file_write_mode =r ty_file_write_mode.append_to_file then
+				co_create_for_existing_file ( &
+					file = i_file &
+					character_set = i_character_set &
+					append_mode = yes &
+					auto_flush = i_auto_flush &
+					error_handler = i_error_handler ) &
+					( o_result = result &
+					o_error = error )
+
+			else if i_file_write_mode =r ty_file_write_mode.replace_file then
+				co_create_for_existing_file ( &
+					file = i_file &
+					character_set = i_character_set &
+					append_mode = no &
+					auto_flush = i_auto_flush &
+					error_handler = i_error_handler ) &
+					( o_result = result &
+					o_error = error )
+			else
+				error """'{{i_file_write_mode}}' not suported"""
+			end if
+		end
+	end
+
+	creator create_for_new_file
+		%new_file_input_argument
+		%supported_character_set_input_argument
+		in auto_flush type:yes_no default:no end
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output < file_string_writer >
+
+		script
+			const yes_no append_mode = no
+			o_result.file = i_file
+			o_result.character_set = i_character_set
+			o_result.append_mode = c_append_mode
+			o_result.auto_flush = i_auto_flush
+			
+			var java_exception java_exception
+			java
+				try {
+					o_result.a_delegator = create_delegator ( i_file, i_character_set, i_auto_flush, c_append_mode );
+				}
+				catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+			if v_java_exception #r void then
+				o_error = fa_file_error.create ( &
+					description = """Could not create a writer for file {{i_file}}. The following error occured:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = i_file )
+				i_error_handler.handle_system_error ( o_error )
+				o_result = void
+			end if
+		end
+		test
+			script
+				const file temp_file = se_file.co_create_temporary_file.result ( &
+					delete_file_on_exit = yes )
+				c_temp_file.delete_on_device ( ask_confirmation_in_system_console = no )
+
+				const file_string_writer writer = fa_file_string_writer.create_for_new_file.result ( file = c_temp_file )
+				c_writer.write ( string = "Hello" )
+				c_writer.write_line ( string = " my dear" )
+				c_writer.write_new_line
+				c_writer.write_line ( string = "end" )
+				c_writer.close
+				
+				const string file_content = se_text_file_IO.restore_string_from_file.result ( file = c_temp_file )
+				verify c_file_content compare =v '''Hello my dear
+
+end
+'''
+				c_temp_file.delete_on_device ( ask_confirmation_in_system_console = no )
+			end
+		end
+	end
+	
+	creator create_for_existing_file
+		%existing_file_input_argument
+		%supported_character_set_input_argument
+		in append_mode type:yes_no end
+		in auto_flush type:yes_no default:no end
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output < file_string_writer >
+
+		script
+			o_result.file = i_file
+			o_result.character_set = i_character_set
+			o_result.append_mode = i_append_mode
+			o_result.auto_flush = i_auto_flush
+			
+			var java_exception java_exception
+			java
+				try {
+					o_result.a_delegator = create_delegator ( i_file, i_character_set, i_auto_flush, i_append_mode );
+				}
+				catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+			if v_java_exception #r void then
+				o_error = fa_file_error.create ( &
+					description = """Could not create a writer for file {{i_file}}. The following error occured:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = i_file )
+				i_error_handler.handle_system_error ( o_error )
+				o_result = void
+			end if
+		end
+		test
+			script
+				const file temp_file = se_file.co_create_temporary_file.result ( &
+					delete_file_on_exit = yes )
+
+				// empty file
+
+				var file_string_writer writer = fa_file_string_writer.create_for_existing_file.result ( &
+					file = c_temp_file &
+					append_mode = no )
+				v_writer.write ( string = "line1" )
+				v_writer.close
+				
+				var string file_content = se_text_file_IO.restore_string_from_file.result ( file = c_temp_file )
+				verify v_file_content compare =v "line1"
+				
+				// append text
+
+				v_writer = fa_file_string_writer.create_for_existing_file.result ( &
+					file = c_temp_file &
+					append_mode = yes )
+				v_writer.write_new_line
+				v_writer.write ( string = "line2" )
+				v_writer.close
+				
+				v_file_content = se_text_file_IO.restore_string_from_file.result ( file = c_temp_file )
+				verify v_file_content compare =v '''line1
+line2'''
+
+				// replace text
+
+				v_writer = fa_file_string_writer.create_for_existing_file.result ( &
+					file = c_temp_file &
+					append_mode = no )
+				v_writer.write ( string = "line3" )
+				v_writer.close
+				
+				v_file_content = se_text_file_IO.restore_string_from_file.result ( file = c_temp_file )
+				verify v_file_content compare =v "line3"
+
+				c_temp_file.delete_on_device ( ask_confirmation_in_system_console = no )
+
+				// error
+
+				test file = c_temp_file; append_mode = no
+				verify error
+			end
+		end
+	end
+	
+	creator create_for_new_or_existing_file
+		%new_or_existing_file_input_argument
+		%supported_character_set_input_argument
+		in append_mode type:yes_no end
+		in auto_flush type:yes_no default:no end
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output < file_string_writer >
+
+		script
+			if i_file.exists then
+				co_create_for_existing_file ( &
+					file = i_file &
+					character_set = i_character_set &
+					append_mode = i_append_mode &
+					auto_flush = i_auto_flush &
+					error_handler = i_error_handler ) &
+					( result = o_result &
+					error = o_error )
+			else
+				create_for_new_file ( &
+					file = i_file &
+					character_set = i_character_set &
+					auto_flush = i_auto_flush &
+					error_handler = i_error_handler ) &
+					( result = o_result &
+					error = o_error )
+			end if
+		end
+	end
+
+end factory

@@ -1,0 +1,11 @@
+template mutable_formal_parameter_list_type
+
+	param parameter_value_type end
+	
+	type mutable_{parameter_value_type}_formal_parameter_list
+
+		!gt_mutable_formal_parameter_list<{parameter_value_type}>
+
+	end
+	
+end

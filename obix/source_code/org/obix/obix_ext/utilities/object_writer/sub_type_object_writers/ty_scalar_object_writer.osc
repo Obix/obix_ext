@@ -1,0 +1,11 @@
+type scalar_object_writer
+
+	attribute yes_symbol type:string default:"yes" end
+	attribute no_symbol type:string default:"no" end
+
+	command write_scalar
+		in scalar type:scalar end
+		in writer type:simple_string_writer end
+	end
+	
+end

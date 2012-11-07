@@ -1,0 +1,47 @@
+generic type formal_parameter
+
+	param parameter_value_type end
+	
+	type
+
+		attribute a_id type:parameter_id end
+		
+		attribute alternative_id type:parameter_id voidable:yes default:void end
+
+		attribute default_value_getter type:!gt_object_getter<{parameter_value_type}> voidable:yes end
+		
+		attribute void_allowed type:yes_no end
+
+		attribute validator type:!validator<{parameter_value_type}> voidable:yes end
+		
+		attribute edit_form_UI_item type:edit_form_UI_item voidable:yes end
+		
+		attribute_check
+			script
+				if i_alternative_id #r void then
+					check i_alternative_id #v i_id
+				end if
+			end
+		end
+		
+		command create_parameter
+			in value type:{parameter_value_type} voidable:yes end
+			%system_error_handler_input_argument
+			
+			%result_xor_error_output < &
+				result_type: "!gt_parameter<{parameter_value_type}>" &
+				error_type: parameter_error >
+		end
+
+		command create_default_value_parameter
+			%system_error_handler_input_argument
+			in_check check: i_object_.default_value_getter #r void end
+			
+			%result_xor_error_output < &
+				result_type: "!gt_parameter<{parameter_value_type}>" &
+				error_type: parameter_error >
+		end
+
+	end
+	
+end

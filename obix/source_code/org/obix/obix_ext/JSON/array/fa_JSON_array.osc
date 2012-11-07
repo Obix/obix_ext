@@ -1,0 +1,67 @@
+factory JSON_array type:JSON_array
+
+	attribute list type:!indexed_list<JSON_value> private:yes end
+
+	attribute is_empty
+		get
+			script
+				o_is_empty = a_list.is_empty
+			end
+		end
+	end
+
+	attribute item_count
+		get
+			script
+				o_item_count = a_list.item_count
+			end
+		end
+	end
+
+	command item_iterator
+		script
+			o_result = a_list.item_iterator
+		end
+	end
+
+	command value_at_index
+		script
+			o_result = a_list.item_at_index ( i_index )
+		end
+	end
+
+	command write
+		script
+			i_writer.write ( string = "[" )
+
+			repeat for each JSON_value value in a_list counter:index
+				c_value.write ( i_writer )
+				if c_index < a_list.item_count then
+					i_writer.write ( string = "," )
+				end if
+			end
+
+			i_writer.write ( string = "]" )
+		end
+	end
+	
+	command to_string
+		script
+			const memory_string_writer writer = fa_memory_string_writer.create
+			co_write ( c_writer )
+			o_result = c_writer.result
+		end
+	end
+
+	
+	creator create
+		in list type:!indexed_list<JSON_value> end
+			
+		out result type: JSON_array end
+		
+		script
+			o_result.list = i_list
+		end
+	end
+
+end

@@ -1,0 +1,11 @@
+type UI_action
+
+	inherit generic_UI end
+
+	attribute label type:simple_string end
+	attribute command_path type:simple_string end
+	attribute constant_parameter_list type:string_string_map voidable:yes end
+	attribute ask_confirmation type:yes_no end
+	attribute result_div type:simple_non_empty_string end
+	
+end

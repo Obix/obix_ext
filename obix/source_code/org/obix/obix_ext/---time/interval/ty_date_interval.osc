@@ -1,0 +1,11 @@
+type date_interval
+
+	attribute from type:simple_date end
+
+	attribute to type:date end
+	
+	// TD attribute duration type:duration end
+	
+	attribute_check check: i_to >= i_from end
+	
+end type

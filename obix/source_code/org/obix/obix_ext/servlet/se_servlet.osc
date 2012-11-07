@@ -1,0 +1,13 @@
+service servlet
+
+	command get_default_message_handler
+		in context type:servlet_container_context end
+		
+		out result type:servlet_message_handler end
+
+		script
+			o_result = fa_default_servlet_message_handler.create ( i_context )
+		end
+	end
+
+end service

@@ -1,0 +1,7 @@
+type single_line_text_editor
+
+	inherit edit_form_UI_item end
+
+	inherit single_line_text_form_item end
+
+end

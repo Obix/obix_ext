@@ -1,0 +1,40 @@
+factory multi_line_text_display type:multi_line_text_display
+
+	command write_as_HTML
+		script
+			%display_write_as_HTML_start
+
+			const positive32 cols = &
+				iif a_width_in_characters #r void &
+				then a_width_in_characters &
+				else se_form_UI_config.multi_line_text_width_in_characters end if
+
+			const string cols_att = &
+				iif c_cols #r void &
+				then """ cols="{{c_cols.to_string}}"""" &
+				else se_string_constants.empty_string end if
+
+			const positive32 rows = &
+				iif a_height_in_lines #r void &
+				then a_height_in_lines &
+				else se_form_UI_config.multi_line_text_height_in_lines end if
+
+			const string rows_att = &
+				iif c_rows #r void &
+				then """ rows="{{c_rows.to_string}}"""" &
+				else se_string_constants.empty_string end if
+
+			const string text = &
+				iif a_value #r void &
+				then se_HTML_utilities.escape_HTML_data_for_input_value(a_value.to_string) &
+				else "" end if
+				
+			i_writer.write ( """<textarea{{c_id_att}}{{c_name_att}}{{c_title_att}}{{c_readonly_att}}{{c_class_att}}{{c_cols_att}}{{c_rows_att}}" />{{c_text}}</textarea>""" )
+
+			%display_write_as_HTML_end
+		end
+	end
+
+	creator create kind:in_all end
+
+end

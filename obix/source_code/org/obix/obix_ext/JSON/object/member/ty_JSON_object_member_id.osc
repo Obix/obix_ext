@@ -1,0 +1,1 @@
+type JSON_object_member_id	inherit simple_string; JSON_writable endend

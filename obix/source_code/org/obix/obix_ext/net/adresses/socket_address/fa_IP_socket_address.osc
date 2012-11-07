@@ -1,0 +1,33 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory IP_socket_address type:IP_socket_address
+
+	java_header
+		import java.net.InetSocketAddress;
+
+		import org.obix.obix_ext.net.adresses.IP_address.se_IP_address;
+		import org.obix.obix_ext.net.adresses.network_port_number.fa_network_port_number;
+	end java_header
+
+	java
+		public static fa_IP_socket_address create_from_java_value ( InetSocketAddress i_java_value ) {
+			return co_create_command ( 
+				se_IP_address.create_from_java_value ( i_java_value.getAddress() ),
+				fa_network_port_number.create_from_java_value ( i_java_value.getPort() ) );
+		}
+	end java
+
+	command to_string
+		script
+			o_result = a_IP_address.to_string & ":" & a_port.to_string
+		end
+	end
+
+	creator create kind:in_all end
+
+end

@@ -1,0 +1,9 @@
+type parameter_error default_factory:yes
+
+	inherit resource_data_error end
+	
+	attribute parameter_id type:parameter_id voidable:yes end
+
+	attribute parameter_value type:any_type voidable:yes end
+
+end

@@ -1,0 +1,18 @@
+type cookie
+
+	attribute_list type:non_empty_string
+		attribute name end
+		attribute value end
+		attribute comment end
+		attribute domain_name end
+		attribute visibility_path end
+	end
+
+	attribute_list type:zero_positive32
+		attribute specification_version end
+		attribute max_age_seconds voidable:yes end
+	end
+
+	attribute secure_connection_only type:yes_no voidable:yes end
+
+end

@@ -1,0 +1,17 @@
+type HTTP_servlet
+
+	command start
+		in config type:servlet_config end
+	end
+
+	command end
+		in config type:servlet_config end
+	end
+	
+	command handle_request
+		in request type:HTTP_servlet_request end
+		in response type:HTTP_servlet_response end
+		in config type:servlet_config end
+	end
+
+end

@@ -1,0 +1,100 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service key_values
+
+	java_header
+		import org.obix.obix_core.basics.scalars.number.integer.integer32.fa_signed_integer32;
+	end java_header
+
+	attribute_list type:signed_integer32
+	
+		// TD add others (see constants in java.awt.event.KeyEvent)
+	
+		attribute shift
+			default
+				script
+					java
+						o_shift = new fa_signed_integer32 ( java.awt.event.KeyEvent.VK_SHIFT ) ;
+					end java
+				end
+			end
+		end
+		
+		attribute alt
+			default
+				script
+					java
+						o_alt = new fa_signed_integer32 ( java.awt.event.KeyEvent.VK_ALT ) ;
+					end java
+				end
+			end
+		end
+		
+		attribute control
+			default
+				script
+					java
+						o_control = new fa_signed_integer32 ( java.awt.event.KeyEvent.VK_CONTROL  ) ;
+					end java
+				end
+			end
+		end
+		
+		attribute enter
+			default
+				script
+					java
+						o_enter = new fa_signed_integer32 ( java.awt.event.KeyEvent.VK_ENTER ) ;
+					end java
+				end
+			end
+		end
+		
+		attribute down_arrow
+			default
+				script
+					java
+						o_down_arrow = new fa_signed_integer32 ( java.awt.event.KeyEvent.VK_DOWN ) ;
+					end java
+				end
+			end
+		end
+		
+		attribute up_arrow
+			default
+				script
+					java
+						o_up_arrow = new fa_signed_integer32 ( java.awt.event.KeyEvent.VK_UP ) ;
+					end java
+				end
+			end
+		end
+		
+		attribute left_arrow
+			default
+				script
+					java
+						o_left_arrow = new fa_signed_integer32 ( java.awt.event.KeyEvent.VK_LEFT ) ;
+					end java
+				end
+			end
+		end
+		
+		attribute right_arrow
+			default
+				script
+					java
+						o_right_arrow = new fa_signed_integer32 ( java.awt.event.KeyEvent.VK_RIGHT ) ;
+					end java
+				end
+			end
+		end
+		
+	end attribute_list
+	
+end service

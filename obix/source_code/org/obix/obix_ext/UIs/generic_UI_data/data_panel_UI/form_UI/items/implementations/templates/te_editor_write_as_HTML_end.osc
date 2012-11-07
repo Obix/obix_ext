@@ -1,0 +1,5 @@
+template editor_write_as_HTML_end
+
+			i_writer.write_line ( '''</td></tr>''' )
+
+end

@@ -1,0 +1,318 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service string_finder
+
+	java_header
+		import java.util.regex.Pattern;
+		import java.util.regex.Matcher;
+
+		import org.obix.obix_core.basics.scalars.string.string_value.in_string_find_result;
+		import org.obix.obix_core.basics.scalars.string.string_value.fa_string_find_result;
+	end java_header
+
+	/// TODO
+	find_first_substring
+	find_first_regex
+	find_first_wildcard
+	find_first_character
+
+	find_last_substring
+	find_last_regex
+	find_last_wildcard
+	find_last_character
+
+	find_all_substring (done)
+	find_all_regex (done)
+	find_all_wildcard
+	find_all_character
+
+	find_first_between_2_substrings
+	find_first_between_2_regexes (done)
+	find_first_between_2_wildcards
+	find_first_between_2_characters
+
+	find_last_between_2_substrings
+	find_last_between_2_regexes
+	find_last_between_2_wildcards
+	find_last_between_2_characters
+
+	find_all_between_2_substrings
+	find_all_between_2_regexes (done)
+	find_all_between_2_wildcards
+	find_all_between_2_characters
+
+	..._from
+	..._to
+	..._from_to
+	end ///
+
+	command find_all_substring
+		in string type:simple_string end
+		in substring type:simple_non_empty_string end
+		
+		out result type:string_find_result_list voidable:yes end
+		
+		script
+			o_result = co_find_all_regex ( &
+				string = i_string &
+				regex = se_regex_utilities.literal_string_to_regex ( i_substring ) )
+		end
+
+		test
+			script
+				test string="hello";substring="ll"
+				verify result.item_count =v 1
+				verify result.first_item.start_index =v 3
+				verify result.first_item.end_index =v 4
+				verify result.first_item.found =v "ll"
+
+				test string="hellohello";substring="ll"
+				var string_find_result last_item = v_result.last_item
+				verify last_item.start_index =v 8
+				verify last_item.end_index =v 9
+				verify last_item.found =v "ll"
+				
+				test string="hello {{first_name}}";substring="{{"
+				verify result.item_count =v 1
+				verify result.first_item.start_index =v 7
+				verify result.first_item.end_index =v 8
+				verify result.first_item.found =v "{{"
+			end
+		end
+
+	end
+
+	command find_all_regex
+		in string type:simple_string end
+		in regex type:regex end
+		
+		out result type:string_find_result_list voidable:yes end
+		
+		script
+			const !mutable_indexed_list<string_find_result> temp_result = !mutable_indexed_list_factory<string_find_result>.co_create
+
+			java
+				String string = i_string.getValue().java_value();
+				Pattern pattern = i_regex.java_pattern();
+				Matcher matcher = pattern.matcher ( string );
+				while ( matcher.find() ) {
+					int start = matcher.start();
+					int end = matcher.end();
+					String found = matcher.group();
+					in_string_find_result string_find_result = fa_string_find_result.co_create_command ( 
+						new fa_positive32(start+1), new fa_positive32(end), new fa_non_empty_string(found));
+					c_temp_result.co_append_command ( string_find_result );
+				}
+			end java
+
+			if not temp_result.is_empty then
+				result = temp_result.make_immutable
+			end if
+		end
+
+		test
+			script
+				test string="hello"; regex = fa_regex.create ( "ll".value )
+				verify result.item_count =v 1
+				verify result.first_item.start_index =v 3
+				verify result.first_item.end_index =v 4
+				verify result.first_item.found =v "ll"
+
+				test string="hellohello"; regex = fa_regex.create ( "ll".value )
+				var string_find_result last_item = v_result.last_item
+				verify last_item.start_index =v 8
+				verify last_item.end_index =v 9
+				verify last_item.found =v "ll"
+				
+				test string="hello {{first_name}}"; regex = fa_regex.create ( "\\Q{{\\E".value )
+				verify result.item_count =v 1
+				verify result.first_item.start_index =v 7
+				verify result.first_item.end_index =v 8
+				verify result.first_item.found =v "{{"
+			end
+		end
+
+	end
+
+	command find_first_regex_from
+		in string type:simple_string end
+		in regex type:regex end
+		in from type:positive32 end
+		%check_max_string_length_input<from>
+		
+		out result type:string_find_result voidable:yes end
+		
+		script
+			java
+				String string = i_string.getValue().java_value();
+				Pattern pattern = i_regex.java_pattern();
+				Matcher matcher = pattern.matcher ( string );
+				if ( matcher.find ( i_from.getValue().java_value() - 1) ) {
+					o_result = fa_string_find_result.co_create_command ( 
+						new fa_positive32(matcher.start()+1), new fa_positive32(matcher.end()), new fa_non_empty_string(matcher.group()));
+				}
+			end java
+		end
+
+		test
+			script
+				test string="hello"; regex = fa_regex.create ( "ll".value ); from=1
+				verify result.start_index =v 3
+				verify result.end_index =v 4
+				verify result.found =v "ll"
+
+				test string="hello"; regex = fa_regex.create ( "ll".value ); from=3
+				verify result.start_index =v 3
+				verify result.end_index =v 4
+				verify result.found =v "ll"
+
+				test string="hello"; regex = fa_regex.create ( "ll".value ); from=4
+				verify result =r void
+
+				test string="hello"; regex = fa_regex.create ( "lll".value ); from=1
+				verify result =r void
+
+				test string="hellohello"; regex = fa_regex.create ( "ll".value ); from=4
+				verify result.start_index =v 8
+				verify result.end_index =v 9
+				verify result.found =v "ll"
+
+				test string="123''''890"; regex = fa_regex.create ( "'''[^']".value ); from=2
+				verify result.start_index compare =v 5
+				verify result.end_index compare =v 8
+				verify result.found compare =v "'''8"
+
+				test string="123''''"; regex = fa_regex.create ( "'''$".value ); from=2
+				verify result.start_index compare =v 5
+				verify result.end_index compare =v 7
+				verify result.found compare =v "'''"
+
+				test string="123''''"; regex = fa_regex.create ( "'''[^']".value ); from=2
+				verify result =r void
+				
+				// string literal
+
+				test string="123'''7"; regex = fa_regex.create ( "'''($|[^'])".value ); from=2
+				verify result.start_index compare =v 4
+				verify result.end_index compare =v 7
+				verify result.found compare =v "'''7"
+
+				test string="123''''8"; regex = fa_regex.create ( "'''($|[^'])".value ); from=2
+				verify result.start_index compare =v 5
+				verify result.end_index compare =v 8
+				verify result.found compare =v "'''8"
+
+				test string="123'''"; regex = fa_regex.create ( "'''($|[^'])".value ); from=2
+				verify result.start_index compare =v 4
+				verify result.end_index compare =v 6
+				verify result.found compare =v "'''"
+
+				test string="123''''"; regex = fa_regex.create ( "'''($|[^'])".value ); from=2
+				verify result.start_index compare =v 5
+				verify result.end_index compare =v 7
+				verify result.found compare =v "'''"
+
+			end
+		end
+
+	end
+
+	
+	// find between 2 regexes
+
+	command find_all_between_2_regexes
+		in string type:simple_string end
+		in start_regex type:regex end
+		in end_regex type:regex end
+		
+		out result type:!indexed_list<string_find_between_result> voidable:yes end
+		
+		script
+			const !mutable_indexed_list<string_find_between_result> mutable_result = !mutable_indexed_list_factory<string_find_between_result>.create
+			
+			var positive32 start_position = 1
+
+			repeat forever
+				const string_find_between_result result_item = co_find_first_between_2_regexes ( &
+					string = i_string &
+					start_regex = i_start_regex &
+					end_regex = i_end_regex &
+					from = v_start_position )
+				if c_result_item =r void then
+					exit repeat
+				end if
+				
+				c_mutable_result.append ( c_result_item )
+				
+				v_start_position = 1 + c_result_item.end_index
+			end repeat
+
+			o_result = iif c_mutable_result.is_empty then void else c_mutable_result.make_immutable end if
+		end
+	end
+
+	command find_first_between_2_regexes
+		in string type:simple_string end
+		in start_regex type:regex end
+		in end_regex type:regex end
+		in from type:positive32 voidable:yes default:void end
+		in to type:positive32 voidable:yes default:void end
+		in_check
+			script
+				check i_to =r void or i_to <= i_string.value.item_count &
+					error_message: """i_to ({{i_to.to_string}}) must be less than or equal to the length of i_string ({{i_string.value.item_count.to_string}}).""" &
+					error_id: out_of_bounds
+				check i_to =r void or i_from =r void or i_to >= i_from &
+					error_message: """i_from ({{i_from.to_string}}) must be less than or equal to i_to ({{i_to.to_string}})""" &
+					error_id: out_of_bounds
+			end
+		end
+		
+		out result type:string_find_between_result voidable:yes end
+		
+		script
+			var string_find_result find_result = co_find_first_regex_from ( &
+				string = i_string &
+				regex = i_start_regex &
+				from = i_from )
+			if v_find_result =r void then
+				exit script
+			end if
+			
+			const positive32 start_position = v_find_result.end_index + 1
+			if c_start_position > i_string.value.item_count then
+				exit script
+			end if
+			
+			v_find_result = co_find_first_regex_from ( &
+				string = i_string &
+				regex = i_end_regex &
+				from = c_start_position )
+			if v_find_result =r void then
+				exit script
+			end if
+			const zero_positive32 end_position = 0 + v_find_result.start_index - 1
+
+			// if i_end_regex starts immediately after i_start_regex then c_end_position =v c_start_position - 1
+			if c_end_position >= c_start_position then
+				o_result = fa_string_find_between_result.create ( &
+					start_index = c_start_position &
+					end_index = c_end_position &
+					found = i_string.to_string.extract_from_to ( &
+						from = c_start_position &
+						to = fa_positive32.create ( c_end_position.value ) ) )
+			else
+				o_result = fa_string_find_between_result.create ( &
+					start_index = c_start_position &
+					end_index = c_end_position &
+					found = se_string_constants.empty_string )
+			end if
+		end
+	end
+
+end service

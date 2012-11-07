@@ -1,0 +1,10 @@
+type display_form_UI_item
+
+	inherit form_UI_item
+		attribute include_in_request default:no end
+	end
+
+	attribute value type:any_type voidable:yes end
+
+end
+	

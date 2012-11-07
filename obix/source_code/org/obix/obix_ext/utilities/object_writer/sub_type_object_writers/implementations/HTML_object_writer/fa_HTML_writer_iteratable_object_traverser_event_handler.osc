@@ -1,0 +1,106 @@
+factory HTML_writer_iteratable_object_traverser_event_handler type:iteratable_object_traverser_event_handler
+
+	attribute_list private:yes
+		attribute any_type_object_writer type:any_type_object_writer end
+		attribute writer type:simple_string_writer end
+	end
+
+	command on_table_start
+		script
+			a_writer.write ( '''<table border="1" cellspacing="0" cellpadding="2">''' )
+		end
+	end
+	
+	command on_table_end
+		script
+			a_writer.write ( "</table>" )
+		end
+	end
+	
+	command on_table_abort
+		script
+			// do nothing
+		end
+	end
+	
+	command on_table_header_start
+		script
+			a_writer.write ( "<thead><tr>" )
+		end
+	end
+	
+	command on_table_header_end
+		script
+			a_writer.write ( "</tr></thead>" )
+		end
+	end
+	
+	command on_row_number_header
+		script
+			a_writer.write ( "<th>No.</th>" )
+		end
+	end
+
+	command on_table_header_column
+		script
+			a_writer.write ( "<th>" )
+			if i_column_header_object #r void then
+				a_writer.write ( se_HTML_utilities.escape_HTML_code ( i_column_header_object.to_string ) )
+			end if
+			a_writer.write ( "</th>" )
+		end
+	end
+	
+	command on_table_body_start
+		script
+			a_writer.write ( "<tbody>" )
+		end
+	end
+	
+	command on_table_body_end
+		script
+			a_writer.write ( "</tbody>" )
+		end
+	end
+	
+	command on_table_row_start
+		script
+			a_writer.write ( "<tr>" )
+		end
+	end
+	
+	command on_table_row_end
+		script
+			a_writer.write ( "</tr>" )
+		end
+	end
+	
+	command on_row_number
+		script
+			a_writer.write ( """<th scope="row">{{i_row_number.to_string}}</th>""" )
+		end
+	end
+
+	command on_table_field_object
+		script
+			a_writer.write ( "<td>" )
+			a_any_type_object_writer.write_object ( &
+				object = i_field_object &
+				writer = a_writer )
+			a_writer.write ( "</td>" )
+		end
+	end
+
+	creator create
+		in any_type_object_writer type:any_type_object_writer end
+		in writer type:simple_string_writer end
+
+		out result type:iteratable_object_traverser_event_handler end
+		
+		script
+			o_result.any_type_object_writer = i_any_type_object_writer
+			o_result.writer = i_writer
+		end
+	end
+
+end

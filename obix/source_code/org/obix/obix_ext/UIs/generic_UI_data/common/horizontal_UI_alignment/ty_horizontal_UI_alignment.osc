@@ -1,0 +1,5 @@
+type horizontal_UI_alignment
+
+	enumerated left; center; right end
+	
+end

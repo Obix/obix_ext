@@ -1,0 +1,7 @@
+type edit_form_UI
+
+	inherit form_UI end
+
+	attribute submit_action type:form_UI_action end
+
+end

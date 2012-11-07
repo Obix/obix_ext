@@ -1,0 +1,8 @@
+type JSON_boolean
+
+	// inherit JSON_value; yes_no end
+	inherit JSON_value end
+	
+	attribute value type:yes_no end
+
+end

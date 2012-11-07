@@ -1,0 +1,13 @@
+generic factory formal_parameter
+
+	param parameter_value_type end
+	
+	factory type:!gt_formal_parameter<{parameter_value_type}>
+	
+		%formal_parameter_factory_commands<{parameter_value_type}>
+
+		creator create kind:in_all end
+		
+	end
+
+end

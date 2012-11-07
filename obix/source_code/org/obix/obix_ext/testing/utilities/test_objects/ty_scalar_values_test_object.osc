@@ -1,0 +1,19 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+type scalar_values_test_object default_factory:yes
+
+	attribute_list voidable:yes default:void
+
+		attribute string_attribute type:string end
+		attribute signed_integer32_attribute type:signed_integer32 end
+		attribute yes_no_attribute type:yes_no end
+		attribute character_attribute type:character end
+
+	end
+
+end

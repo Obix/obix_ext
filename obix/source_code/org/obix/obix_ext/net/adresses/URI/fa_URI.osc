@@ -1,0 +1,294 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory URI type:URI
+
+	java_header
+		import java.io.File;
+		import java.net.URI;
+
+		import org.obix.obix_core.basics.scalars.string.string_value.fa_string_value;
+		import org.obix.obix_core.java.fa_java_exception;
+	end java_header
+
+	java
+		private URI a_java_value;
+		
+		public URI java_URI() { return a_java_value; }
+	end java
+
+	%te_java_URI_factory_attribute<attribute: "scheme"; method:"getScheme">
+
+	%te_java_URI_factory_attribute<attribute: "user_info"; method:"getUserInfo">
+
+	%te_java_URI_factory_attribute<attribute: "host"; method:"getHost">
+
+	%te_java_URI_factory_attribute<attribute: "path"; method:"getPath">
+
+	%te_java_URI_factory_attribute<attribute: "query"; method:"getQuery">
+
+	%te_java_URI_factory_attribute<attribute: "fragment"; method:"getFragment">
+
+	%te_java_URI_factory_attribute<attribute: "scheme_specific_part"; method:"getSchemeSpecificPart">
+
+	%te_java_URI_factory_attribute<attribute: "authority"; method:"getAuthority">
+
+	%te_java_URI_factory_attribute<attribute: "encoded_user_info"; method:"getRawUserInfo">
+
+	%te_java_URI_factory_attribute<attribute: "encoded_path"; method:"getRawPath">
+
+	%te_java_URI_factory_attribute<attribute: "encoded_query"; method:"getRawQuery">
+
+	%te_java_URI_factory_attribute<attribute: "encoded_fragment"; method:"getRawFragment">
+
+	%te_java_URI_factory_attribute<attribute: "encoded_scheme_specific_part"; method:"getRawSchemeSpecificPart">
+
+	%te_java_URI_factory_attribute<attribute: "encoded_authority"; method:"getRawAuthority">
+
+	attribute port
+		get
+			script
+				java
+					int result = a_java_value.getPort();
+					o_port = (result >= 0) ? new fa_zero_positive32(result) : null;
+				end java
+			end
+		end
+	end
+	
+	attribute is_absolute_URI
+		get
+			script
+				java
+					o_is_absolute_URI = a_java_value.isAbsolute() ? fa_yes_no.a_yes : fa_yes_no.a_no;
+				end java
+			end
+		end
+	end
+
+	attribute is_opaque_URI
+		get
+			script
+				java
+					o_is_opaque_URI = a_java_value.isOpaque() ? fa_yes_no.a_yes : fa_yes_no.a_no;
+				end java
+			end
+		end
+	end
+	
+	attribute private_query_map type:string_string_map voidable:yes private:yes kind:variable end
+
+	attribute query_map
+		get
+			script
+				co_define_query_map
+
+				if a_private_query_map.is_empty then
+					o_query_map = void
+				else
+					o_query_map = a_private_query_map
+				end if
+			end
+		end
+	end
+
+	command contains_query_name
+		script
+			co_define_query_map
+
+			o_result = a_private_query_map.contains_key ( i_query_name )
+		end
+	end
+
+	command get_query_value_if_exists
+		script
+			co_define_query_map
+			
+			a_private_query_map.get_item_if_contained ( i_query_name )
+		end
+	end
+
+	command require_query_value
+		script
+			o_result = a_private_query_map.require_item ( i_query_name )
+		end
+	end
+	
+	command to_URL
+		script
+			fa_URL.create_from_string ( &
+				string = a_value.to_string &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error = error )
+		end
+	end
+
+
+	command define_query_map private:yes
+		script
+			if a_private_query_map #r void then
+				exit script
+			end if
+			
+			if a_encoded_query =r void then
+				a_private_query_map = fa_string_string_map.create_empty
+			else
+				a_private_query_map = se_URI_utilities.encoded_query_string_to_unencoded_query_map.result ( &
+					encoded_query_string = a_encoded_query )
+			end if
+		end
+	end
+	
+	
+	// note: all characters must have been encoded already (see java.net.URI doc.)
+	creator create kind:in_all
+
+		script
+			o_result.value = i_value
+			
+			java
+				o_result.a_java_value = new URI ( i_value.java_value() );
+			end java
+		end
+	end
+	
+	%create_from_string_creator_for_simple_string<URI>
+
+	creator create_from_unencoded_components
+		in scheme type:non_empty_string voidable:yes end
+		in user_info type:non_empty_string voidable:yes end
+		in host type:non_empty_string voidable:yes end
+		in port type:zero_positive32 voidable:yes end
+		in path type:non_empty_string voidable:yes end
+		in query type:non_empty_string voidable:yes end
+		in fragment type:non_empty_string voidable:yes end
+		%supported_character_set_input_argument
+		%system_error_handler_input_argument
+
+		
+		%result_xor_system_error_output<URI>
+
+		script
+			var java_exception java_exception
+			java
+				try {
+					o_result.a_java_value = new java.net.URI(
+						i_scheme != null ? i_scheme.getValue().java_value() : null,
+						i_user_info != null ? i_user_info.getValue().java_value() : null,
+						i_host != null ? i_host.getValue().java_value() : null,
+						i_port != null ? i_port.getValue().java_value() : -1,
+						i_path != null ? i_path.getValue().java_value() : null,
+						i_query != null ? i_query.getValue().java_value() : null,
+						i_fragment != null ? i_fragment.getValue().java_value() : null);
+					o_result.a_value = new fa_string_value ( o_result.a_java_value.toString() );
+				} catch (java.net.URISyntaxException e) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_result = void
+				o_error = fa_invalid_URI_error.create ( &
+					description = """Invalid URI data. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					data = void )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+		
+		test
+			script
+				test &
+					scheme = "http" &
+					user_info = void &
+					host = "www.example.com" &
+					port = 8080 &
+					path = "/foo/bar/zar" &
+					query = "name1=value1&name2=value2" &
+					fragment = "fragment_id"
+				verify v_result.value compare =v '''http://www.example.com:8080/foo/bar/zar?name1=value1&name2=value2#fragment_id'''~
+
+				test &
+					scheme = "http" &
+					user_info = void &
+					host = "www.example.com" &
+					port = void &
+					path = '''/foo\bar.zar_-<>/''' &
+					query = '''name1?<>/:=value1?<>/:&name2=value2''' &
+					fragment = void
+				verify v_result.value compare =v '''http://www.example.com/foo%5Cbar.zar_-%3C%3E/?name1?%3C%3E/:=value1?%3C%3E/:&name2=value2'''~
+
+				verify result.path compare =v '''/foo\bar.zar_-<>/'''
+				verify result.encoded_path compare =v '''/foo%5Cbar.zar_-%3C%3E/'''
+
+				verify result.query compare =v '''name1?<>/:=value1?<>/:&name2=value2'''
+				verify result.encoded_query compare =v '''name1?%3C%3E/:=value1?%3C%3E/:&name2=value2'''
+			end
+		end
+	end
+	
+	creator create_for_file
+		in file type:absolute_or_relative_file end
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output<URI>
+
+		script
+			var java_exception java_exception
+			java
+				try {
+					o_result.a_java_value = new File ( i_file.getValue().java_value() ).toURI();
+				} catch (SecurityException e) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+				o_result.a_value = new fa_string_value ( o_result.a_java_value.toString() );
+			end java
+
+			if v_java_exception #r void then
+				o_result = void
+				o_error = fa_invalid_URI_error.create ( &
+					description = """File '{{i_file}}' cannot be converted to a URI. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					data = void )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+
+	creator create_for_directory
+		in directory type:absolute_or_relative_directory end
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output<URI>
+
+		script
+			var java_exception java_exception
+			java
+				try {
+					o_result.a_java_value = new File ( i_directory.getValue().java_value() ).toURI();
+				} catch (SecurityException e) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+				o_result.a_value = new fa_string_value ( o_result.a_java_value.toString() );
+			end java
+
+			if v_java_exception #r void then
+				o_result = void
+				o_error = fa_invalid_URI_error.create ( &
+					description = """Directory '{{i_directory}}' cannot be converted to a URI. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					data = void )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+
+end factory

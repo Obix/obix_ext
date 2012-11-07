@@ -1,0 +1,13 @@
+service XML_constants
+
+	attribute_list type:non_empty_string
+	
+		attribute document_header_1_0_UTF8 default:'''<?xml version="1.0" encoding="UTF-8"?>''' end
+
+		attribute CDATA_start default:"<![CDATA[" end
+		attribute CDATA_end default:"]]>" end
+
+		// attribute void_value_as_string default: se_any_type.void_object_as_string end
+	end
+
+end service

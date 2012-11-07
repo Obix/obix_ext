@@ -1,0 +1,91 @@
+factory default_servlet_message_handler type:servlet_message_handler
+
+	command info_message
+		script
+			co_message ( "INFO: " & i_message )
+		end
+	end
+
+	command warning_message
+		script
+			const string the_message = "WARNING: " & i_message
+			co_message ( the_message )
+
+			a_container_context.log_error ( &
+				message = the_message &
+				error = void )
+		end
+	end
+
+	command remote_error_message
+		script
+			co_error_message ( &
+				error = fa_servlet_remote_error.create ( description = i_message ) &
+				response = i_response )
+		end
+	end command
+
+	command remote_error
+		script
+			co_error_message ( &
+				error = i_error &
+				response = i_response )
+		end
+	end command
+
+	command host_error_message
+		script
+			co_error_message ( &
+				error = fa_servlet_host_error.create ( description = i_message ) &
+				response = i_response )
+		end
+	end command
+
+	command host_error
+		script
+			co_error_message ( &
+				error = i_error &
+				response = i_response )
+		end
+	end command
+
+	command debug_message
+		script
+			co_message ( "DEBUG: " & i_message )
+		end
+	end
+	
+	command_list private:yes
+
+		command error_message
+			in error type:servlet_error end
+			in response type:HTTP_servlet_response end
+
+			script
+				const string c_message = "ERROR: " & i_error.description
+				co_message ( c_message )
+
+				a_container_context.log_error ( &
+					message = c_message &
+					error = i_error )
+					
+				i_response.string_response_writer.write ( string = c_message )
+			end
+		end
+
+		command message
+			in message type:string end
+			
+			script
+				a_container_context.log_message ( i_message )
+				// se_console.message ( i_message )
+				se_system.out.write_line ( string = i_message )
+			end
+		end
+		
+	end command_list
+
+
+	creator create kind:in_all end
+
+end factory

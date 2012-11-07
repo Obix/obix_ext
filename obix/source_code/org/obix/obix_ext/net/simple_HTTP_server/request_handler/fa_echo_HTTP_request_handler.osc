@@ -1,0 +1,75 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory echo_HTTP_request_handler type: simple_HTTP_request_handler
+
+	command handle_request
+		script
+			i_response.initialize
+			
+			const simple_string_writer writer = i_response.get_string_response_writer
+		
+			c_writer.write ( string = "<h3>Hello from Obix web server</h3>" )
+			
+			write_value ( &
+				writer = c_writer &
+				label = "request URI" &
+				value = i_request.URI )
+			write_value ( &
+				writer = c_writer &
+				label = "host_address" &
+				value = i_request.host_address )
+			write_value ( &
+				writer = c_writer &
+				label = "remote_address" &
+				value = i_request.remote_address )
+			write_value ( &
+				writer = c_writer &
+				label = "protocol" &
+				value = i_request.protocol )
+			write_value ( &
+				writer = c_writer &
+				label = "request method" &
+				value = i_request.method )
+			write_value ( &
+				writer = c_writer &
+				label = "request path" &
+				value = i_request.path )
+
+			const string_string_map query_map = i_request.query_map
+			if c_query_map #r void then
+				c_writer.write ( string = "<br>parameters:<br>" )
+				repeat for each key simple_non_empty_string name in c_query_map
+					write_value ( &
+						writer = c_writer &
+						label = c_name &
+						value = c_query_map.require_item ( c_name ) )
+				end repeat
+			end if
+			
+			c_writer.close
+		end
+	end
+	
+	command write_value private:yes
+		in writer type:simple_string_writer end
+		in label type:simple_string voidable:yes end
+		in value type:any_type end
+		
+		script
+			if i_label #r void then
+				i_writer.write ( i_label )
+				i_writer.write ( ": " )
+			end if
+			i_writer.write ( se_any_type.force_object_to_string ( i_value ) )
+			i_writer.write ( "<br>" )
+		end
+	end
+	
+	creator create kind:in_all end
+	
+end factory

@@ -1,0 +1,22 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory network_port_number type:network_port_number
+
+	java
+		public static fa_network_port_number create_from_java_value ( int i_java_value ) {
+			return co_create_command ( new fa_integer32_value ( i_java_value ) );
+		}
+	end java
+
+	%scalar_is_equal_to_factory_command
+	
+	%scalar_to_string_factory_command
+
+	creator create kind:in_all end
+
+end

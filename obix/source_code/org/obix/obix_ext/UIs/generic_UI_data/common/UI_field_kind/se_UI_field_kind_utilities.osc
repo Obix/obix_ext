@@ -1,0 +1,54 @@
+service UI_field_kind_utilities
+
+	command get_UI_field_kind_for_type_id_path
+		in type_id_path type:type_id_path end
+		
+		out result type:ty_UI_field_kind.enumerated end
+		
+		script
+			o_result = get_UI_field_kind_for_type ( se_reflection.library_repository.type_by_id_path ( i_type_id_path ) )
+		end
+	end
+
+	command get_UI_field_kind_for_type
+		in i_type type:type end
+		
+		out result type:ty_UI_field_kind.enumerated end
+		
+		script
+			// ty_type.is_compatible_to is SLOW. Should use utility in se_reflection which uses java.lang.Class.isAssignableFrom(Class<?> cls)
+			if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.scalar ) then
+
+				if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.simple_string ) then
+					if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.text ) then
+						o_result = ty_UI_field_kind.multi_line_text
+					else if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.string ) then
+						o_result = ty_UI_field_kind.single_line_text
+					else if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.local_date_time ) then
+						o_result = ty_UI_field_kind.local_date_time
+					else
+						o_result = ty_UI_field_kind.single_line_text
+					end if
+
+				else if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.yes_no ) then
+					o_result = ty_UI_field_kind.yes_no_value
+
+				else if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.integer_number ) then
+					o_result = ty_UI_field_kind.integer_number
+
+				else if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.simple_character ) then
+					o_result = ty_UI_field_kind.character
+					
+				// TD add others
+
+				else
+					o_result = ty_UI_field_kind.single_line_text
+				end if
+
+			else
+				o_result = ty_UI_field_kind.single_line_text
+			end if
+		end
+	end
+
+end

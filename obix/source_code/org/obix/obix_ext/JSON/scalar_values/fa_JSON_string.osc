@@ -1,0 +1,11 @@
+factory JSON_string type:JSON_string
+
+	command write
+		script
+			i_writer.write ( se_string_constants.double_quote & se_JSON_utilities.escape_JSON_data ( this ) & se_string_constants.double_quote )
+		end
+	end
+
+	creator create kind:in_all end
+
+end

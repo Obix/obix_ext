@@ -1,0 +1,5 @@
+type JSON_integer
+
+	inherit JSON_number; simple_signed_integer32 end
+
+end

@@ -1,0 +1,86 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory java_simple_HTTP_request_handler type:simple_HTTP_request_handler
+
+	java_header
+		import java.io.PrintWriter;
+		
+		import com.sun.net.httpserver.HttpExchange;
+		import com.sun.net.httpserver.HttpHandler;
+
+		import org.obix.obix_ext.net.simple_HTTP_server.request_handler.in_simple_HTTP_request_handler;
+		import org.obix.obix_ext.net.simple_HTTP_server.request.in_simple_HTTP_request;
+		import org.obix.obix_ext.net.simple_HTTP_server.request.fa_java_simple_HTTP_request;
+		import org.obix.obix_ext.net.simple_HTTP_server.response.in_simple_HTTP_response;
+		import org.obix.obix_ext.net.simple_HTTP_server.response.fa_java_simple_HTTP_response;
+		
+		import org.obix.obix_core.system.se_system;
+		import org.obix.obix_core.java.se_java_IO;
+	end java_header
+
+	java
+		private HttpHandler a_java_request_handler;
+		public HttpHandler java_value() { return a_java_request_handler; }
+	end java
+
+	attribute obix_request_handler type:simple_HTTP_request_handler private:yes end
+
+	command handle_request
+		script
+			a_obix_request_handler.handle_request ( &
+				request = i_request &
+				response = i_response )
+		end
+	end
+	
+	creator create
+		in obix_request_handler type:simple_HTTP_request_handler end
+		
+		out result type:simple_HTTP_request_handler end
+
+		script
+			o_result.obix_request_handler = i_obix_request_handler
+			o_result.system_error_handler = i_obix_request_handler.system_error_handler
+
+			java
+				final in_simple_HTTP_request_handler v_obix_request_handler = i_obix_request_handler;
+
+				o_result.a_java_request_handler = new HttpHandler() {
+
+					public void handle ( HttpExchange i_exchange ) {
+						try {
+							in_simple_HTTP_request request = new fa_java_simple_HTTP_request ( i_exchange );
+							in_simple_HTTP_response response = new fa_java_simple_HTTP_response ( i_exchange );
+							v_obix_request_handler.co_handle_request_command ( request, response );
+						}
+						catch ( Throwable i_throwable ) {
+
+							se_system._co_handle_exception ( i_throwable ) ;
+
+							PrintWriter writer = null;
+							try {
+								try {
+									// doesn't work if if v_obix_request_handler has already called sendResponseHeaders
+									i_exchange.sendResponseHeaders ( 500, 0 );
+								} catch ( Throwable t ) {}
+
+								writer = new PrintWriter ( i_exchange.getResponseBody() );
+								writer.write ( "Sorry! An internal server error occured." );
+								
+							} catch ( Throwable t ) {
+							} finally {
+								se_java_IO.close_writer ( writer );
+							}
+						}
+					}
+				};
+			end java
+		end
+	end
+
+end

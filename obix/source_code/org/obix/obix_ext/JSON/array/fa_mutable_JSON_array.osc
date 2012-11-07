@@ -1,0 +1,65 @@
+factory mutable_JSON_array type:mutable_JSON_array
+
+	attribute list type:!mutable_indexed_list<JSON_value> default:!mutable_indexed_list_factory<JSON_value>.create private:yes end
+
+	attribute is_empty
+		get
+			script
+				o_is_empty = a_list.is_empty
+			end
+		end
+	end
+
+	attribute item_count
+		get
+			script
+				o_item_count = a_list.item_count
+			end
+		end
+	end
+
+	command item_iterator
+		script
+			o_result = a_list.item_iterator
+		end
+	end
+
+	command append
+		script
+			a_list.append ( i_value )
+		end
+	end
+
+	command append_string
+		script
+			a_list.append ( fa_JSON_string.create ( i_value.value ) )
+		end
+	end
+
+	command append_integer
+		script
+			a_list.append ( fa_JSON_integer.create ( i_value.value ) )
+		end
+	end
+
+	command append_boolean
+		script
+			a_list.append ( fa_JSON_boolean.create ( i_value ) )
+		end
+	end
+
+	command append_null
+		script
+			a_list.append ( se_JSON_null.shared_value )
+		end
+	end
+
+	command copy_to_immutable
+		script
+			o_result = fa_JSON_array.create ( a_list.copy_to_immutable )
+		end
+	end
+
+	creator create kind:in_all end
+
+end

@@ -1,0 +1,82 @@
+factory HTTP_servlet_response_java_wrapper type:HTTP_servlet_response
+
+	java_header
+		import javax.servlet.*;
+		import javax.servlet.http.*;
+
+		import org.obix.obix_ext.IO.string_writer.*;
+	end java_header
+
+	java
+        HttpServletResponse a_java_value;
+        
+        public fa_HTTP_servlet_response_java_wrapper ( HttpServletResponse i_java_value ) {
+        	a_java_value = i_java_value;
+        }
+	end java
+
+	attribute private_string_response_writer type:simple_string_writer voidable:yes private:yes end
+	attribute string_response_writer
+		get
+			script
+				if a_private_string_response_writer =r void then
+					java
+						a_private_string_response_writer = new fa_java_PrintWriter_string_writer ( a_java_value.getWriter() );
+					end java
+				end if
+				o_string_response_writer = a_private_string_response_writer
+			end
+		end
+	end
+
+///
+	command add_header
+		script
+			error "Not yet implemented"
+		end
+	end
+
+	command replace_header // setHeader()
+		script
+			error "Not yet implemented"
+		end
+	end
+
+	command has_header
+		script
+			error "Not yet implemented"
+		end
+	end
+
+	command add_cookie
+		script
+			error "Not yet implemented"
+		end
+	end
+
+	command set_status
+		script
+			error "Not yet implemented"
+		end
+	end
+
+	command send_redirect
+		script
+			error "Not yet implemented"
+		end
+	end
+
+	command send_error
+		script
+			error "Not yet implemented"
+		end
+	end
+
+	command encode_URL
+		script
+			error "Not yet implemented"
+		end
+	end
+end ///
+
+end

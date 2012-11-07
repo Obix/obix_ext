@@ -1,0 +1,9 @@
+type JPA_execute_query_error default_factory:yes
+
+	inherit JPA_error
+		attribute a_id default:"JPA_execute_query_error" end
+	end
+	
+	attribute query type:string end
+
+end

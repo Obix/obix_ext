@@ -1,0 +1,11 @@
+template formal_parameter_factory
+
+	param parameter_value_type end
+
+	factory {parameter_value_type}_formal_parameter type:{parameter_value_type}_formal_parameter
+
+		!gf_formal_parameter < {parameter_value_type} >
+
+	end
+	
+end

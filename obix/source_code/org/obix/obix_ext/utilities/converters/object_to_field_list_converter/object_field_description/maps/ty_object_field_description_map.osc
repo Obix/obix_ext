@@ -1,0 +1,5 @@
+type object_field_description_map
+
+	!map<key_type:simple_non_empty_string; item_type:object_field_description>
+
+end

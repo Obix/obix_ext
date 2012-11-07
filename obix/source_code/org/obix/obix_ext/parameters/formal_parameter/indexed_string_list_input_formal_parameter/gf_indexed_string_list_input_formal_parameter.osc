@@ -1,0 +1,69 @@
+generic factory indexed_string_list_input_formal_parameter
+
+	param parameter_value_type end
+	
+	factory type:!gt_indexed_string_list_input_formal_parameter<{parameter_value_type}>
+	
+		%formal_parameter_factory_commands<{parameter_value_type}>
+
+		command create_parameter_from_string_list
+			script
+
+				// convert from string list to object
+				var {parameter_value_type} parameter_value
+				if i_value #r void then
+					var error converter_error
+					a_converter.convert ( &
+						input = i_value &
+						error_handler = i_error_handler ) &
+						( v_parameter_value = o_result &
+						converter_error = o_error )
+					if converter_error #r void then
+						o_error = fa_parameter_error.create ( &
+							description = converter_error.description &
+							resource = void &
+							data = i_value &
+							parameter_id = a_id &
+							parameter_value = i_value )
+						exit script
+					end if
+				else
+					parameter_value = void
+				end if
+
+				co_create_parameter ( &
+					value = v_parameter_value &
+					error_handler = i_error_handler ) &
+					( o_result = result &
+					o_error = error )
+					
+			end
+		end
+
+		creator create kind:in_all end
+		
+		creator create_with_default_value
+			in i_id type:parameter_id end
+			in alternative_id type:parameter_id voidable:yes default:void end
+			in default_value type:{parameter_value_type} voidable:yes end
+			in void_allowed type:yes_no end
+			in validator type:!validator<{parameter_value_type}> voidable:yes end
+			in edit_form_UI_item type:edit_form_UI_item voidable:yes end
+			in converter type:!indexed_string_list_to_object_converter < {parameter_value_type} > end
+			
+			out result type:!gt_indexed_string_list_input_formal_parameter<{parameter_value_type}> end
+			
+			script
+				o_result.id = i_id
+				o_result.alternative_id = i_alternative_id
+				o_result.default_value_getter = !gf_constant_object_getter<{parameter_value_type}>.create ( i_default_value )
+				o_result.void_allowed = i_void_allowed
+				o_result.validator = i_validator
+				o_result.edit_form_UI_item = i_edit_form_UI_item
+				o_result.converter = i_converter
+			end
+		end
+
+	end
+
+end

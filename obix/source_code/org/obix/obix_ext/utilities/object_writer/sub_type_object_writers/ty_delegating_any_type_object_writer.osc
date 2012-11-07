@@ -1,0 +1,13 @@
+type delegating_any_type_object_writer
+
+	inherit any_type_object_writer end
+
+	attribute_list // kind:variable setable:all
+		attribute void_object_writer type:void_object_writer end
+		attribute scalar_object_writer type:scalar_object_writer end
+		attribute composite_object_writer type:composite_object_writer end
+		attribute iteratable_object_writer type:iteratable_object_writer end
+		attribute tree_object_writer type:tree_object_writer end
+	end
+
+end

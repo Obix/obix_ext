@@ -1,0 +1,144 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory simple_HTTP_server type:simple_HTTP_server
+
+	java_header 
+		import java.net.InetSocketAddress;
+
+		import com.sun.net.httpserver.HttpServer;
+		
+		import org.obix.obix_ext.net.simple_HTTP_server.request_handler.fa_java_simple_HTTP_request_handler;
+	end java_header
+
+	java
+		HttpServer a_java_value;
+	end java
+
+	attribute private_is_running type:yes_no private:yes kind:variable end
+
+	attribute is_running
+		get
+			script
+				o_is_running = a_private_is_running
+			end
+		end
+	end
+
+	command start
+		script
+			java
+				// TD java doc says: Once stopped, a HttpServer cannot be re-used. 
+				a_java_value.start();
+			end java
+
+			a_private_is_running = yes
+		end
+	end
+
+	command stop
+		script
+			java
+				a_java_value.stop(0);
+			end java
+
+			a_private_is_running = no
+		end
+	end
+	
+	command add_context
+		script
+			java
+				a_java_value.createContext (
+					i_context_path.getValue().java_value(), 
+					fa_java_simple_HTTP_request_handler.co_create_command ( i_request_handler ).java_value() );
+			end java
+		end
+	end
+
+	command remove_context
+		script
+			java
+				a_java_value.removeContext ( i_context_path.getValue().java_value() );
+			end java
+		end
+	end 
+
+
+	creator create kind:in_all
+		script
+			java
+				int port = i_port.getValue().java_value();
+				InetSocketAddress address;
+				if ( i_IP_address == null ) {
+					address = new InetSocketAddress ( port );
+				} else {
+					address = new InetSocketAddress ( i_IP_address.getValue().java_value(), port );
+				}
+
+				o_result.a_java_value = HttpServer.create ( address, 0 );
+
+				// TD a default Executer is created when start() is called!
+				// Exceptions are no more catched because the request handler runs in a different thread
+				// must be changed -> create Executor which catches errors the "Obix way"
+				//o_result.a_java_value.setExecutor(null);
+
+				//o_result.a_java_value.start();
+				//System.out.println("exec " + o_result.a_java_value.getExecutor());
+
+				/* following doesn't work
+				exceptions must be catched in request handler
+				see te_te_request_handler_factory_java_code
+
+				o_result.a_java_value.setExecutor(new java.util.concurrent.Executor() {
+						public void execute(Runnable command) {
+							System.out.println("run server " + command);
+							// following doesn't work, because command is not a Thread object
+							//Thread thread = (Thread) command;
+							//thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+							//		public void uncaughtException(Thread t, Throwable e) {
+							//			System.out.println(e);
+							//		}
+							//	});
+							try {
+								//String s = null;
+								//System.out.println(s.toString());
+								command.run();
+							}
+							catch (Exception e) {
+								System.out.println(e);
+							}
+						}
+					}
+				);
+				*/
+			end java
+
+			o_result.port = i_port
+			o_result.IP_address = i_IP_address
+			o_result.default_request_handler = i_default_request_handler
+
+			o_result.private_is_running = no
+			
+			o_result.add_context ( &
+				context_path = "/" &
+				request_handler = i_default_request_handler )
+		end
+	end
+
+	creator create_and_start kind:in_all
+		script
+			o_result = co_create ( &
+				port = i_port &
+				IP_address = i_IP_address &
+				default_request_handler = i_default_request_handler )
+
+			o_result.start
+		end
+	end
+
+end factory

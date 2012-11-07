@@ -1,0 +1,59 @@
+type servlet_request
+
+	attribute_list type:non_empty_string kind:readonly_constant
+		attribute local_host_name end
+		attribute server_host_name end
+		attribute remote_host_name end
+	end
+
+	attribute_list type:non_empty_string kind:readonly_constant
+		attribute local_IP_address end
+		attribute remote_IP_address end
+	end
+
+	attribute_list type:zero_positive32 kind:readonly_constant // TD socket_port_number
+		attribute local_port end
+		attribute server_port end
+		attribute remote_port end
+	end
+
+	attribute_list kind:readonly_constant
+
+		attribute scheme type:non_empty_string end
+		attribute protocol_used type:non_empty_string end
+		attribute secure_connection_used type:yes_no end
+
+		attribute content_type type:non_empty_string voidable:yes end
+		attribute content_length type:zero_positive32 voidable:yes end
+
+		attribute character_encoding type:non_empty_string voidable:yes end
+
+		// TD attribute preferred_locale type:locale end
+		// TD attribute acceptable_locales type:!indexed_list<locale> end
+
+		attribute URL_parameters type:string_parameter_list end
+
+	end
+
+	// TD attribute request_body_string_reader type:string_reader end
+	// TD attribute request_body_binary_reader type:binary_reader end
+	
+	command get_URL_parameter_value
+		in parameter_name type:simple_non_empty_string end
+		
+		out result type:string voidable:yes end
+	end
+	
+	command get_body_content_as_string
+		out result type:string voidable:yes end
+		// TD4 out error
+	end
+
+/// TD
+java.lang.Object getAttribute(java.lang.String name)
+java.util.Enumeration getAttributeNames()
+ServletInputStream getInputStream()
+RequestDispatcher getRequestDispatcher(java.lang.String path)
+end ///
+
+end

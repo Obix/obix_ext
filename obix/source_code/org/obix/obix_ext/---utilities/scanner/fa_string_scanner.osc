@@ -1,0 +1,110 @@
+factory string_scanner type:string_scanner
+
+	java_header
+		import java.util.Scanner;
+		import java.util.regex.Pattern;
+	end java_header
+
+	java
+		private Scanner scanner;
+	end java
+	
+	command close
+		script
+			java
+				scanner.close();
+			end java
+		end
+	end
+
+	command has_next_token
+		script
+			java
+				boolean has_next = false;
+				try {
+					has_next = scanner.hasNext();
+				} catch ( Exception e ) {}
+				o_result = new fa_yes_no ( has_next );
+			end java
+		end
+	end
+
+	command scan_token
+		script
+			java
+				String next_token = null;
+				try {
+					next_token = scanner.next();
+				} catch ( Exception e ) {}
+				if ( next_token != null ) {
+					o_result = new fa_string ( next_token );
+				}
+			end java
+		end
+	end
+
+	command scan_regex
+		script
+			java
+				String next_token = null;
+				Pattern pattern = i_regex.java_pattern();
+				try {
+					next_token = scanner.next ( pattern );
+				} catch ( Exception e ) {}
+				if ( next_token != null ) {
+					o_result = new fa_string ( next_token );
+				}
+			end java
+		end
+	end
+
+	command scan_regex_string
+		script
+			java
+				String next_token = null;
+				String pattern = i_regex.getValue().java_value();
+				try {
+					next_token = scanner.next ( pattern );
+				} catch ( Exception e ) {}
+				if ( next_token != null ) {
+					o_result = new fa_string ( next_token );
+				}
+			end java
+		end
+	end
+	
+	command scan_string_literal
+		script
+			o_result = co_scan_regex ( se_regex_constants.string_literal_regex )
+			if o_result =r void then
+				exit script
+			end if
+			
+			if i_remove_embedding_quotes then
+				o_result = o_result.remove_first.co_remove_last
+			end if
+			
+			if i_replace_escaped_quotes then
+				o_result = o_result.replace_all ( &
+					to_replace = '''\"''' &
+					replace_by = '''"''' )
+			end if
+		end
+	end
+
+	creator create
+		in string type:string end
+		in token_delimiter type:regex default:se_regex_constants.whitespace_regex end 
+		
+		out result type:string_scanner end
+		
+		script
+			o_result.token_delimiter = i_token_delimiter
+
+			java
+				o_result.scanner = new Scanner ( i_string.getValue().java_value() );
+			end java
+		end
+	end
+
+end

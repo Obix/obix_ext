@@ -1,0 +1,35 @@
+service JSON_constants
+
+	attribute_list type:non_empty_string
+
+		attribute name_value_separator default: ":" end
+		attribute item_separator default: "," end
+
+		attribute object_start default: "{" end
+		attribute object_end default: "}" end
+
+		attribute array_start default: "[" end
+		attribute array_end default: "]" end
+		
+		attribute double_quote_token_encloser default: se_string_constants.double_quote end
+		attribute single_quote_token_encloser default: se_string_constants.single_quote end
+
+		attribute null_value default: "null" end
+	
+		attribute double_quote_escape    default: '''\"''' end
+		attribute single_quote_escape    default: '''\'''' end
+		attribute new_line_escape        default: '''\n''' end
+		attribute carriage_return_escape default: '''\r''' end
+		attribute tab_escape             default: '''\t''' end
+		attribute backslash_escape       default: '''\\''' end
+		attribute slash_escape           default: '''\/''' end
+		attribute backspace_escape       default: '''\b''' end
+		attribute form_feed_escape       default: '''\f''' end
+
+		attribute empty_string_value     default: '''""''' end
+
+		attribute yes_value default: "true" end
+		attribute no_value  default: "false" end
+	end
+
+end service

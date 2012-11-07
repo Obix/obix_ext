@@ -1,0 +1,20 @@
+factory HTML_void_object_writer type:void_object_writer
+
+	command write_void
+		script
+			i_writer.write ( a_void_symbol )
+		end
+	end
+	
+	creator create kind:in_all end
+
+	test
+		script
+			const void_object_writer to = co_create
+			const memory_string_writer writer = fa_memory_string_writer.create
+			to.write_void ( c_writer )
+			verify c_writer.result compare =v se_any_type.void_object_as_string
+		end
+	end test
+
+end

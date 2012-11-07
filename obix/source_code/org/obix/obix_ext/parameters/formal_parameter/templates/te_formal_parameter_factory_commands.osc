@@ -1,0 +1,77 @@
+template formal_parameter_factory_commands
+
+	param parameter_value_type end
+
+		command create_default_value_parameter
+			script
+				var any_type any_type_default_value
+				var system_error system_error
+				a_default_value_getter.get_object ( &
+					error_handler = i_error_handler ) &
+					( v_any_type_default_value = result &
+					v_system_error = error )
+				if v_system_error #r void then
+					o_error = fa_parameter_error.create ( &
+						description = """Default value for parameter '{{a_id}}' cannot be accessed. Reason:
+{{v_system_error.description}}""" &
+						resource = void &
+						data = void &
+						parameter_id = a_id &
+						parameter_value = void )
+					exit script
+				end if
+
+				const {parameter_value_type} default_value = v_any_type_default_value type_check:no
+				co_create_parameter ( &
+					value = c_default_value &
+					error_handler = i_error_handler ) &
+					( o_result = result &
+					o_error = error )
+			end
+		end
+
+		command create_parameter
+			script
+
+				// check if valid
+				
+				if not a_void_allowed and i_value =r void then
+					o_error = fa_parameter_error.create ( &
+						description = """Value of parameter '{{a_id}}' cannot be void.""" &
+						resource = void &
+						data = i_value &
+						parameter_id = a_id &
+						parameter_value = void )
+					i_error_handler.handle_system_error ( o_error )
+					exit script
+				end if
+				
+				if a_validator #r void then
+					var yes_no is_valid
+					var error validator_error
+					a_validator.is_valid ( &
+						object = i_value &
+						error_handler = i_error_handler ) &
+						( v_is_valid = o_result &
+						validator_error = o_error )
+					if validator_error #r void then
+						o_error = fa_parameter_error.create ( &
+							description = """'{{i_value.to_string}}' is invalid for parameter '{{a_id}}'. Reason:
+{{validator_error.description}}""" &
+							resource = void &
+							data = i_value &
+							parameter_id = a_id &
+							parameter_value = i_value )
+						exit script
+					end if
+				end if
+				
+				// create parameter
+				
+				o_result = !gf_parameter<{parameter_value_type}>.create ( &
+					id = a_id &
+					value = i_value )
+			end
+		end
+
+end

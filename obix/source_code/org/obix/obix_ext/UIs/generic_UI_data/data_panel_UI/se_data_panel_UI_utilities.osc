@@ -1,0 +1,30 @@
+service data_panel_UI_utilities
+
+	command get_display_UI_for_object
+		in object type:any_type end
+		in title type:simple_string voidable:yes end
+		in action_list type:!indexed_list<UI_action> voidable:yes end
+	
+		out result type:data_panel_UI voidable:yes end
+		
+		script
+			case type of i_object
+				when scalar scalar then
+
+				when !iteratable<*> iteratable then
+					// TD
+
+				when !simple_tree_node<*> tree then
+					// TD
+
+				otherwise
+					o_result = se_form_UI_utilities.get_display_form_UI_for_object ( &
+						object = i_object &
+						form_title = i_title &
+						form_action_list = i_action_list &
+						include_readonly_attributes = no )
+			end case
+		end
+	end
+
+end

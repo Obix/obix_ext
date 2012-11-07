@@ -1,0 +1,17 @@
+service horizontal_UI_alignment_utilities
+
+	command get_horizontal_UI_alignment_for_type
+		in i_type type:type end
+		
+		out result type:ty_horizontal_UI_alignment.enumerated end
+		
+		script
+			if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.number ) then
+				o_result = ty_horizontal_UI_alignment.right
+			else
+				o_result = ty_horizontal_UI_alignment.left
+			end if
+		end
+	end
+
+end

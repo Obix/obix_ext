@@ -1,0 +1,7 @@
+type servlet_remote_error default_factory:yes
+
+	inherit servlet_error
+		attribute a_id default:"servlet_remote_error" end
+	end inherit
+
+end type

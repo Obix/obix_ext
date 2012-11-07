@@ -1,0 +1,7 @@
+type JSON_object_boolean_member
+
+	inherit JSON_object_member
+		attribute value type:JSON_boolean end
+	end
+
+end

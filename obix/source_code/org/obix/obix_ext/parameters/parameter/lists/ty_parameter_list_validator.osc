@@ -1,0 +1,5 @@
+type parameter_list_validator
+
+	!validator < !gt_parameter_list<*> >
+	
+end

@@ -1,0 +1,51 @@
+type servlet_container_context
+
+	attribute context_name type:string end
+	attribute context_path type:string end
+	attribute context_init_parameters type:string_parameter_list end
+
+	attribute container_info type:string end
+
+	attribute shared_servlet_parameters type:string_parameter_list end // TD default:fa_mutable_any_type_parameters.create_empty end
+
+
+	command get_file_MIME_type
+		in file_name type:simple_string end
+		
+		out MIME_type type:string voidable:yes end
+	end
+
+	command get_absolute_file_or_directory_path
+		in relative_file_or_directory_path type:simple_string end
+		
+		out result type:string end
+	end
+
+	command get_resource_URL
+		in relative_path type:simple_string end
+		
+		out result type:string end // TD URL
+	end
+
+	command log_message
+		in message type:simple_string end
+	end
+
+	command log_error
+		in message type:simple_string default:"An error occured." end
+		in error type:error voidable:yes end
+	end
+	
+/// TD
+	attribute parameter_list type: mutable_any_type_parameters end
+	attribute major_version type: positive32 end
+	attribute minor_version type: positive32 end
+
+	ServletContext getContext(java.lang.String uripath) 
+	RequestDispatcher getNamedDispatcher(java.lang.String name) 
+	RequestDispatcher getRequestDispatcher(java.lang.String path) 
+	java.io.InputStream getResourceAsStream(java.lang.String path) 
+	java.util.Set getResourcePaths(java.lang.String path) 
+end ///
+
+end

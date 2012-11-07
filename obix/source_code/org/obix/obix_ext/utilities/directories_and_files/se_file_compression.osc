@@ -1,0 +1,411 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service file_compression
+
+	java_header
+		import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+		import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+		import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+		
+		import java.util.Enumeration;
+
+		import java.util.zip.GZIPInputStream;
+		import java.util.zip.GZIPOutputStream;
+		import java.util.zip.ZipEntry;
+		import java.util.zip.ZipFile;
+		import java.util.zip.ZipOutputStream;
+
+		import java.io.*;
+		
+		import org.obix.obix_core.java.fa_java_exception;
+		import org.obix.obix_core.java.se_java_IO;
+		import org.obix.obix_core.directories_and_files.files.absolute_file.in_file;
+		import org.obix.obix_core.directories_and_files.files.absolute_file.fa_file;
+	end java_header
+	
+
+	command create_zip_file_for_directory_content
+		%existing_directory_input_argument
+		in zip_file type:file end
+		in overwrite_existing_zip_file type:yes_no end
+		in include_child_directories type:yes_no end
+		in add_empty_directories type:yes_no default:yes end
+		%system_error_handler_input_argument
+		in_check
+			script
+				check i_overwrite_existing_zip_file or not i_zip_file.exists
+				// check not i_zip_file.to_current_OS_path.value.starts_with ( i_directory.to_current_OS_path.value )
+			end
+		end
+		
+		%resource_error_output_argument
+		out_check check: i_zip_file.exists or i_error #r void end
+	
+		script
+			// note: code similar to se_java_tools.create_jar_file
+
+			var directory_or_file_list directory_or_file_list
+			i_directory.directory_or_file_list ( &
+				include_child_directories = i_include_child_directories &
+				error_handler = i_error_handler ) &
+				( v_directory_or_file_list = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+
+			if v_directory_or_file_list.is_empty then
+				o_error = fa_resource_error.create ( &
+					description = """File '{{i_zip_file.to_current_OS_path}}' cannot be created because there are no files in directory '{{i_directory.to_current_OS_path}}'.""" &
+					resource = i_zip_file )
+				i_error_handler.handle_system_error ( o_error )
+				exit script
+			end if
+			
+			var java_exception java_exception = void
+			java
+				FileInputStream v_file_input_stream = null;
+				BufferedInputStream v_buffered_input_stream = null;
+
+				FileOutputStream v_file_output_stream = null;
+				ZipOutputStream v_zip_output_stream = null;
+				try	{
+					int buffer_size = se_java_IO.default_IO_buffer_size;
+					v_file_output_stream = new FileOutputStream ( i_zip_file.getValue().java_value() ) ;
+					v_zip_output_stream = new ZipOutputStream ( v_file_output_stream ) ;
+					byte[] buffer = new byte[buffer_size];
+			end java
+
+			repeat for each directory_or_file directory_or_file in v_directory_or_file_list
+				case type of c_directory_or_file
+					when file file then
+						const string_value relative_file_path = c_file.make_relative_file ( i_directory ).value
+						java
+							v_file_input_stream = new FileInputStream ( c_file.getValue().java_value() );
+							v_buffered_input_stream = new BufferedInputStream ( v_file_input_stream, buffer_size );
+
+							v_zip_output_stream.putNextEntry ( 
+								new ZipEntry ( c_relative_file_path.java_value().replace('\\', '/') ) );
+								
+							// add file to zip file
+							int bytes_read;
+							while ((bytes_read = v_buffered_input_stream.read(buffer)) != -1) {
+								v_zip_output_stream.write ( buffer, 0, bytes_read );
+							}
+							se_java_IO.close_input_stream ( v_buffered_input_stream );
+						end java
+
+					when directory directory_item then
+						if i_add_empty_directories then
+
+							var yes_no directory_is_empty
+							c_directory_item.is_empty ( &
+								error_handler = i_error_handler ) &
+								( v_directory_is_empty = result &
+								o_error = error )
+							if o_error #r void then
+								exit script
+							end if
+							
+							if v_directory_is_empty then
+								const string_value relative_directory_path = directory_item.make_relative_directory ( i_directory ).value
+								java
+									v_zip_output_stream.putNextEntry ( 
+										new ZipEntry ( c_relative_directory_path.java_value().replace('\\', '/') ) );
+								end java
+							end if
+						end if
+				end case
+			end repeat
+
+			java
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+				finally {
+					se_java_IO.close_output_stream ( v_zip_output_stream );
+				}
+			end java
+			
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """Zip file '{{i_zip_file.to_current_OS_path}}' cannot be created. The following error occured:
+{{v_java_exception.message}}.""" &
+					java_exception = v_java_exception &
+					resource = i_zip_file )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end script
+	end command
+
+	command extract_zip_file_to_directory
+		%existing_file_input_argument
+		%existing_directory_input_argument
+		// in overwrite_existing_files type:yes_no end
+		%system_error_handler_input_argument
+
+		%resource_error_output_argument
+	
+		script
+			var java_exception java_exception = void
+
+			java
+				BufferedInputStream input_stream = null;
+				BufferedOutputStream output_stream = null;
+				ZipFile zip_file = null;
+				try	{
+					File root_directory = new File ( i_directory.getValue().java_value() );
+					zip_file = new ZipFile ( i_file.getValue().java_value() );
+					Enumeration entries = zip_file.entries();
+					while ( entries.hasMoreElements() ) {
+						ZipEntry entry = (ZipEntry) entries.nextElement();
+						File entry_file = new File ( root_directory, entry.getName() );
+						
+						if ( entry.isDirectory() ) {
+							entry_file.mkdirs();
+						} else {
+							entry_file.getParentFile().mkdirs();
+							int buffer_size = se_java_IO.default_IO_buffer_size;
+							byte[] buffer = new byte[buffer_size];
+							input_stream = new BufferedInputStream ( zip_file.getInputStream ( entry ) );
+							output_stream = new BufferedOutputStream ( new FileOutputStream ( entry_file ) );
+							int bytes_read;
+							while ((bytes_read = input_stream.read(buffer)) != -1) {
+								output_stream.write ( buffer, 0, bytes_read );
+							}
+							se_java_IO.close_input_stream ( input_stream );
+							se_java_IO.close_output_stream ( output_stream );
+						}
+					}
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+
+				} finally {
+					se_java_IO.close_input_stream ( input_stream );
+					se_java_IO.close_output_stream ( output_stream );
+					zip_file.close(); // must be done!
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """File '{{i_file.to_current_OS_path}}' cannot be extracted to directory '{{i_directory}}'. The following error occured:
+{{v_java_exception.message}}.""" &
+					java_exception = v_java_exception &
+					resource = i_file )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end 
+	end
+	
+	command create_tar_gz_file_for_directory_content
+		%existing_directory_input_argument
+		in tar_gz_file type:file end
+		in overwrite_existing_tar_gz_file type:yes_no end
+		in include_child_directories type:yes_no end
+		in add_empty_directories type:yes_no default:yes end
+		in allow_all_Unix_permissions_filter type:file_filter voidable:yes default:void end
+		%system_error_handler_input_argument
+		in_check
+			script
+				check i_overwrite_existing_tar_gz_file or not i_tar_gz_file.exists
+				// check not i_zip_file.to_current_OS_path.value.starts_with ( i_directory.to_current_OS_path.value )
+			end
+		end
+		
+		%resource_error_output_argument
+		out_check check: i_tar_gz_file.exists or i_error #r void end
+	
+		script
+			// note: code similar to se_java_tools.create_jar_file
+
+			var directory_or_file_list directory_or_file_list
+			i_directory.directory_or_file_list ( &
+				include_child_directories = i_include_child_directories &
+				error_handler = i_error_handler ) &
+				( v_directory_or_file_list = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+
+			if v_directory_or_file_list.is_empty then
+				o_error = fa_resource_error.create ( &
+					description = """File '{{i_tar_gz_file.to_current_OS_path}}' cannot be created because there are no files in directory '{{i_directory.to_current_OS_path}}'.""" &
+					resource = i_tar_gz_file )
+				i_error_handler.handle_system_error ( o_error )
+				exit script
+			end if
+			
+			var java_exception java_exception = void
+			java
+				BufferedInputStream v_buffered_input_stream = null;
+				TarArchiveOutputStream v_tar_gz_output_stream = null;
+				try	{
+					v_tar_gz_output_stream = new TarArchiveOutputStream ( new GZIPOutputStream ( new BufferedOutputStream ( new FileOutputStream ( i_tar_gz_file.getValue().java_value() ))));
+					v_tar_gz_output_stream.setLongFileMode ( TarArchiveOutputStream.LONGFILE_GNU );
+					int buffer_size = se_java_IO.default_IO_buffer_size;
+					byte[] buffer = new byte[buffer_size];
+			end java
+
+			repeat for each directory_or_file directory_or_file in v_directory_or_file_list
+				case type of c_directory_or_file
+					when file file then
+						const yes_no allow_all_Unix_permissions = &
+							iif i_allow_all_Unix_permissions_filter #r void &
+							then i_allow_all_Unix_permissions_filter.is_accepted ( c_file ) &
+							else no end if
+						const string_value relative_file_path = c_file.make_relative_file ( i_directory ).value
+						java
+							File file = new File ( c_file.getValue().java_value() );
+							TarArchiveEntry entry = new TarArchiveEntry ( file, c_relative_file_path.java_value().replace('\\', '/') );
+
+							// problem:
+							// tar.gz file created in Windows
+							// file copied to Linux directory (owner=root)
+							// file extracted to Linux home directory (owner=user)
+							// --> execute permission for .sh file is removed !!!
+							// reason: file permissions set in Apache Commons = 0100644
+							// org.apache.commons.compress.archivers.tar.TarArchiveEntry.DEFAULT_FILE_MODE = 0100644
+							// to change this, permission must be set explicitly with TarArchiveEntry.setMode();
+
+							// following doesn't work
+							// read file permissions in order to save them in .tar file
+							// boolean flag = file.canExecute();
+							// flag = file.canRead();
+							// flag = file.canWrite() ;
+							// file.setExecutable ( true, false );
+							
+							if ( c_allow_all_Unix_permissions.java_value() ) {
+								entry.setMode(0100777);
+							}
+
+							v_tar_gz_output_stream.putArchiveEntry ( entry );
+
+							// add file to tar.gz file
+							v_buffered_input_stream = new BufferedInputStream ( new FileInputStream ( c_file.getValue().java_value() ), buffer_size );
+							int bytes_read;
+							while ((bytes_read = v_buffered_input_stream.read(buffer)) != -1) {
+								v_tar_gz_output_stream.write ( buffer, 0, bytes_read );
+							}
+							se_java_IO.close_input_stream ( v_buffered_input_stream );
+
+							v_tar_gz_output_stream.closeArchiveEntry();
+						end java
+
+					when directory directory_item then
+						if i_add_empty_directories then
+							var yes_no directory_is_empty
+							c_directory_item.is_empty ( &
+								error_handler = i_error_handler ) &
+								( v_directory_is_empty = result &
+								o_error = error )
+							if o_error #r void then
+								exit script
+							end if
+							
+							if v_directory_is_empty then
+								const string_value relative_directory_path = directory_item.make_relative_directory ( i_directory ).value
+								java
+									v_tar_gz_output_stream.putArchiveEntry ( new TarArchiveEntry ( c_relative_directory_path.java_value().replace('\\', '/') ) );
+									v_tar_gz_output_stream.closeArchiveEntry();
+								end java
+							end if
+						end if
+				end case
+			end repeat
+
+			java
+					v_tar_gz_output_stream.finish();
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+				finally {
+					se_java_IO.close_output_stream ( v_tar_gz_output_stream );
+				}
+			end java
+			
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """tar.gz file '{{i_tar_gz_file.to_current_OS_path}}' cannot be created. The following error occured:
+{{v_java_exception.message}}.""" &
+					java_exception = v_java_exception &
+					resource = i_tar_gz_file )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+	
+	command extract_tar_gz_file_to_directory
+		%existing_file_input_argument
+		%existing_directory_input_argument
+		// in overwrite_existing_files type:yes_no end
+		in allow_all_Unix_permissions_filter type:file_filter voidable:yes default:void end
+		%system_error_handler_input_argument
+
+		%resource_error_output_argument
+	
+		script
+			var java_exception java_exception = void
+			
+			java
+				TarArchiveInputStream input_stream = null;
+				BufferedOutputStream output_stream = null;
+				try	{
+					File root_directory = new File ( i_directory.getValue().java_value() );
+					input_stream = new TarArchiveInputStream ( new GZIPInputStream ( new BufferedInputStream ( new FileInputStream ( i_file.getValue().java_value() ))));
+					
+					TarArchiveEntry entry = null; 
+					while ( (entry = input_stream.getNextTarEntry()) != null) {
+						File entry_file = new File ( root_directory, entry.getName() );
+						if ( entry.isDirectory() ) {
+							entry_file.mkdirs();
+						} else {
+							entry_file.getParentFile().mkdirs();
+							int buffer_size = se_java_IO.default_IO_buffer_size;
+							byte[] buffer = new byte[buffer_size];
+							output_stream = new BufferedOutputStream ( new FileOutputStream ( entry_file ) );
+							int bytes_read;
+							while ((bytes_read = input_stream.read(buffer)) != -1) {
+								output_stream.write ( buffer, 0, bytes_read );
+							}
+							se_java_IO.close_output_stream ( output_stream );
+							
+							if ( i_allow_all_Unix_permissions_filter != null ) {
+								in_file current_file = fa_file.co_create_command ( new fa_string_value ( entry_file.getPath() ) );
+								if ( i_allow_all_Unix_permissions_filter.co_is_accepted_command ( current_file ).java_value() ) {
+									// entry_file.setMode(0100777);
+									entry_file.setExecutable ( true, false );
+									entry_file.setReadable ( true, false );
+									entry_file.setWritable ( true, false );
+								}
+							}
+						}
+					}
+
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+
+				} finally {
+					se_java_IO.close_input_stream ( input_stream );
+					se_java_IO.close_output_stream ( output_stream );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """File '{{i_file.to_current_OS_path}}' cannot be extracted to directory '{{i_directory}}'. The following error occured:
+{{v_java_exception.message}}.""" &
+					java_exception = v_java_exception &
+					resource = i_file )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end 
+	end
+	
+end service

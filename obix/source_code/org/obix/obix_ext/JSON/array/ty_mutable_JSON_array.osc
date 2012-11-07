@@ -1,0 +1,44 @@
+type mutable_JSON_array
+
+	inherit !mutable_collection<JSON_value>
+		command copy_to_immutable
+			out result type:JSON_array end
+		end
+	end
+	
+	command append
+		in value type:JSON_value end
+	end
+
+	command append_string
+		in value type:simple_string end
+	end
+
+	command append_integer
+		in value type:signed_integer32 end
+	end
+
+	command append_boolean
+		in value type:yes_no end
+	end
+
+	command append_null
+	end
+
+	///
+	command value_at_index
+		in index type:positive32 check: i_index <= i_object_.item_count end
+
+		out result type:JSON_value end
+	end
+
+	command remove
+		in index type:positive32 check: i_index <= i_object_.item_count end
+	end
+	
+	co_prepend
+	co_insert_before
+	co_insert_after
+	end ///
+
+end

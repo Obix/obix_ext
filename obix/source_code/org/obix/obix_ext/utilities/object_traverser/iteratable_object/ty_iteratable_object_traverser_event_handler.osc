@@ -1,0 +1,73 @@
+type iteratable_object_traverser_event_handler
+
+	command on_table_start
+		in iteratable type:!iteratable<*> end
+		in title_object type:any_type voidable:yes end
+		in row_count type:zero_positive32 voidable:yes end
+		in column_count type:positive32 end
+	end
+	
+	command on_table_end
+		in row_count type:zero_positive32 end
+	end
+	
+	command on_table_abort
+		in rows_traversed_count type:zero_positive32 end
+		in total_rows_count type:zero_positive32 voidable:yes end
+	end
+	
+	command on_table_header_start
+		in row_count type:zero_positive32 voidable:yes end
+		in column_count type:positive32 end
+	end
+	
+	command on_table_header_end
+		in row_count type:zero_positive32 voidable:yes end
+		in column_count type:positive32 end
+	end
+	
+	command on_row_number_header
+	end
+	
+	command on_table_header_column
+		in column_header_object type:any_type voidable:yes end
+		in column_index type:positive32 end
+		in is_last_column type:yes_no end
+	end
+	
+	command on_table_body_start
+		in row_count type:zero_positive32 voidable:yes end
+		in column_count type:positive32 end
+	end
+	
+	command on_table_body_end
+		in row_count type:zero_positive32 end
+		in column_count type:positive32 end
+	end
+	
+	command on_table_row_start
+		in row_object type:any_type voidable:yes end
+		in row_index type:positive32 end
+		in is_last_row type:yes_no end
+	end
+	
+	command on_table_row_end
+		in row_object type:any_type voidable:yes end
+		in row_index type:positive32 end
+		in is_last_row type:yes_no end
+	end
+	
+	command on_row_number
+		in row_number type:positive32 end
+		in is_last_row type:yes_no end
+	end
+
+	command on_table_field_object
+		in field_object type:any_type voidable:yes end
+		in row_index type:positive32 end
+		in column_index type:positive32 end
+		in is_last_row type:yes_no end
+		in is_last_column type:yes_no end
+	end
+	
+end

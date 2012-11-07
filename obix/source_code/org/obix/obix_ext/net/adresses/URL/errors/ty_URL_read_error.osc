@@ -1,0 +1,7 @@
+type URL_read_error default_factory:yes
+
+	inherit URL_resource_error
+		attribute a_id default:"URL_read_error" end
+	end
+
+end

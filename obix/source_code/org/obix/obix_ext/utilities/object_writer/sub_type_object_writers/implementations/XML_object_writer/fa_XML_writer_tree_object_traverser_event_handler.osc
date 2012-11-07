@@ -1,0 +1,60 @@
+factory XML_writer_tree_object_traverser_event_handler type:tree_object_traverser_event_handler
+
+	attribute_list private:yes
+		attribute any_type_object_writer type:any_type_object_writer end
+		attribute writer type:simple_string_writer end
+	end
+
+	command on_tree_start
+		script
+			a_writer.write ( "<tree>" )
+		end
+	end
+	
+	command on_tree_end
+		script
+			a_writer.write ( "</tree>" )
+		end
+	end
+	
+	command on_child_node_list_start
+		script
+			a_writer.write ( "<kids>" )
+		end
+	end
+	
+	command on_child_node_list_end
+		script
+			a_writer.write ( "</kids>" )
+		end
+	end
+	
+	command on_tree_node_start
+		script
+			a_writer.write ( "<node>" )
+			a_any_type_object_writer.write_object ( &
+				object = i_tree_node &
+				writer = a_writer )
+		end
+	end
+
+	command on_tree_node_end
+		script
+			a_writer.write ( "</node>" )
+		end
+	end
+
+
+	creator create
+		in any_type_object_writer type:any_type_object_writer end
+		in writer type:simple_string_writer end
+
+		out result type:tree_object_traverser_event_handler end
+		
+		script
+			o_result.any_type_object_writer = i_any_type_object_writer
+			o_result.writer = i_writer
+		end
+	end
+
+end

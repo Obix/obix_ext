@@ -1,0 +1,29 @@
+type mutable_object_field_description_map
+
+	inherit !collection<object_field_description> end
+
+	command contains_id
+		in i_id type:simple_non_empty_string end 
+		
+		out result type:yes_no end
+	end
+
+	command add_field
+		in field type:object_field_description check: not i_object_.contains_id ( i_field.id ) end
+		
+		out result type:mutable_object_field_description_map end
+	end
+
+	command add
+		in i_id type:simple_non_empty_string end
+		in label type:any_type voidable:yes default:void end
+		in UI_field_kind type:UI_field_kind.enumerated default:ty_UI_field_kind.single_line_text end
+		
+		out result type:mutable_object_field_description_map end
+	end
+
+	command make_immutable
+		out result type:object_field_description_map end
+	end
+
+end

@@ -1,0 +1,11 @@
+template parameter_factory
+
+	param parameter_value_type end
+
+	factory {parameter_value_type}_parameter type:{parameter_value_type}_parameter
+
+		!gf_parameter < {parameter_value_type} >
+
+	end
+	
+end

@@ -1,0 +1,62 @@
+type HTTP_servlet_request
+
+	inherit servlet_request end
+	
+	attribute_list kind:readonly_constant
+
+		attribute HTTP_method type:non_empty_string end
+		// attribute HTTP_header type:string_and_string_list_parameters voidable:yes end
+		attribute HTTP_header type:string_parameter_list voidable:yes end
+
+	end
+
+	attribute_list type:non_empty_string kind:readonly_constant
+		attribute URI end
+		attribute URL end
+		attribute URL_without_query end
+		attribute URL_path voidable:yes end
+		attribute URL_path_translated voidable:yes end
+		attribute URL_query voidable:yes end
+	end
+
+	attribute_list type:string kind:readonly_constant
+		attribute servlet_path end
+		attribute context_path end
+	end
+
+	attribute_list kind:readonly_constant
+
+		attribute session type:HTTP_session end
+		attribute is_session_id_from_cookie type:yes_no end
+		attribute is_session_id_from_URL type:yes_no end
+
+		attribute cookie_list type:!indexed_list<cookie> voidable:yes end
+
+	end
+
+	attribute_list type:non_empty_string voidable:yes kind:readonly_constant
+		attribute authentication_type end
+		attribute authenticated_user_name end
+		attribute remote_login_user_id end
+	end
+
+	command get_header_value
+		in header_name type:simple_non_empty_string end
+		
+		out result type:string voidable:yes end
+	end
+
+	command is_authenticated_user_included_in_role
+		in role type:simple_non_empty_string end
+
+		out result type:yes_no end
+	end
+	
+///
+long getDateHeader(java.lang.String name)
+java.lang.String getRequestedSessionId()
+HttpSession getSession(boolean create)
+isRequestedSessionIdValid()
+end ///
+
+end

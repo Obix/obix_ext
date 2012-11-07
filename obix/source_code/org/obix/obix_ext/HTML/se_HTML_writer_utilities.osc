@@ -1,0 +1,40 @@
+service HTML_writer_utilities
+
+	command write_HTML_page_header
+		in writer type:simple_string_writer end
+		in title type:string voidable:yes end
+		in embedded_CSS_code type:string voidable:yes default:void end
+		in on_body_load_event_handler type:string voidable:yes default:void end
+		
+		script
+			i_writer.write ( string = '''<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+''' )
+			if i_title #r void then
+				i_writer.write ( string = """		<title>{{se_HTML_utilities.escape_HTML_code ( i_title )}}</title>
+""" )
+			end if
+			
+			if i_embedded_CSS_code #r void then
+				i_writer.write ( string = i_embedded_CSS_code )
+			end if
+			
+			i_writer.write ( string = """	</head>
+	<body{{iif i_on_body_load_event_handler #r void then " onload=\"" & i_on_body_load_event_handler & "\">" else ">" end if}}
+""" )
+		end
+	end
+
+	command write_HTML_page_footer
+		in writer type:simple_string_writer end
+
+		script
+			i_writer.write ( string = '''
+	</body>
+</html>''' )
+		end
+	end
+
+end

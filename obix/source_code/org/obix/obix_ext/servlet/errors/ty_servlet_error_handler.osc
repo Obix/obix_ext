@@ -1,0 +1,25 @@
+type servlet_error_handler
+
+	attribute container_context type:servlet_container_context end
+
+	command remote_error_message
+		in message type:string end
+		in response type:HTTP_servlet_response voidable:yes end
+	end
+
+	command remote_error
+		in error type:servlet_remote_error end
+		in response type:HTTP_servlet_response voidable:yes end
+	end
+
+	command host_error_message
+		in message type:string end
+		in response type:HTTP_servlet_response voidable:yes end
+	end
+
+	command host_error
+		in error type:servlet_host_error end
+		in response type:HTTP_servlet_response voidable:yes end
+	end
+
+end type

@@ -1,0 +1,5 @@
+type object_information_level
+
+	enumerated none; yes_no; string; detail end
+	
+end

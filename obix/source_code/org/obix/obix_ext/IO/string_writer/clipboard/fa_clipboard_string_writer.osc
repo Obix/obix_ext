@@ -1,0 +1,53 @@
+factory clipboard_string_writer type:clipboard_string_writer
+
+	attribute mutable_string type:mutable_string default:fa_mutable_string.create private:yes kind:variable end
+
+	attribute result
+		get
+			script
+				o_result = a_mutable_string.to_string
+			end
+		end
+	end
+
+	command write
+		script
+			a_mutable_string.append ( i_string )
+		end
+	end
+
+	command write_line
+		script
+			a_mutable_string.append ( i_string )
+			a_mutable_string.append_new_line
+		end
+	end
+
+	command write_new_line
+		script
+			a_mutable_string.append_new_line
+		end
+	end
+	
+	command close
+		script
+			se_system_utilities.copy_string_to_clipboard ( a_mutable_string.to_string )
+		end
+	end
+
+	command flush
+		script
+			se_system_utilities.copy_string_to_clipboard ( a_mutable_string.to_string )
+		end
+	end
+	
+	command reset
+		script
+			a_mutable_string.remove_all
+		end
+	end
+
+
+	creator create kind:in_all end
+
+end factory

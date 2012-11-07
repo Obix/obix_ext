@@ -1,0 +1,89 @@
+factory XML_tree_object_writer type:tree_object_writer
+
+	attribute tree_object_traverser type:tree_object_traverser private:yes end
+
+	command write_tree
+		script
+			const tree_object_traverser_event_handler event_handler = fa_XML_writer_tree_object_traverser_event_handler.create ( &
+				any_type_object_writer = a_any_type_object_writer &
+				writer = i_writer )
+			a_tree_object_traverser.traverse_tree_object ( &
+				tree = i_tree &
+				event_handler = c_event_handler &
+				config = iif i_config #r void then i_config else a_default_config end if )
+		end
+	end
+	
+	creator create kind:in_all
+		script
+			o_result.any_type_object_writer = i_any_type_object_writer
+			o_result.default_config = i_default_config
+			
+			o_result.tree_object_traverser = fa_tree_object_traverser.create ( i_default_config )
+		end
+	end
+
+	///
+	test
+		script
+			const memory_string_writer writer = fa_memory_string_writer.create
+			const tree_object_writer to = co_create ( any_type_object_writer = fa_XML_object_writer.create )
+			
+			// empty
+			const string_tree empty_tree = fa_string_tree.create_empty
+			to.write_tree ( &
+				tree = c_empty_tree &
+				writer = c_writer )
+			verify c_writer.result compare =v '''<tree><node>Object of type string_tree<kids></kids></node></tree>'''
+			
+			// only_leaf_nodes
+			c_writer.reset
+			const string_tree only_leaf_nodes_tree = fa_string_tree.create_with_only_leaf_nodes
+			to.write_tree ( &
+				tree = c_only_leaf_nodes_tree &
+				writer = c_writer )
+			verify c_writer.result compare =v '''<tree><node>Object of type string_tree<kids><node>leaf node 1</node><node>leaf node 2</node><node>leaf node 3</node></kids></node></tree>'''
+			
+			// only_branch_nodes
+			c_writer.reset
+			const string_tree only_branch_nodes_tree = fa_string_tree.create_with_only_branch_nodes
+			to.write_tree ( &
+				tree = c_only_branch_nodes_tree &
+				writer = c_writer )
+			verify c_writer.result compare =v '''<tree><node>Object of type string_tree<kids><node>Object of type string_tree<kids><node>leaf node 1</node><node>leaf node 2</node><node>leaf node 3</node></kids></node><node>Object of type string_tree<kids><node>leaf node 1</node><node>leaf node 2</node><node>leaf node 3</node></kids></node></kids></node></tree>'''
+			
+			// standard tree
+			c_writer.reset
+			const string_tree string_tree = fa_string_tree.create_with_branch_and_leaf_nodes
+			to.write_tree ( &
+				tree = c_string_tree &
+				writer = c_writer )
+			verify c_writer.result compare =v '''<tree><node>Object of type string_tree<kids><node>Object of type string_tree<kids><node>leaf node 1</node><node>leaf node 2</node><node>leaf node 3</node></kids></node><node>Object of type string_tree<kids><node>leaf node 1</node><node>leaf node 2</node><node>leaf node 3</node></kids></node><node>leaf node 1</node><node>leaf node 2</node><node>leaf node 3</node></kids></node></tree>'''
+
+			// information_level
+			
+			c_writer.reset
+			to.write_tree ( &
+				tree= c_string_tree &
+				writer = c_writer &
+				information_level = ty_object_information_level.yes_no )
+			verify c_writer.result compare =v "yes"
+			
+			c_writer.reset
+			to.write_tree ( &
+				tree= c_string_tree &
+				writer = c_writer &
+				information_level = ty_object_information_level.none )
+			verify c_writer.result compare =v ""
+			
+			c_writer.reset
+			to.write_tree ( &
+				tree= c_string_tree &
+				writer = c_writer &
+				information_level = ty_object_information_level.string )
+			verify c_writer.result compare =v "Object of type string_tree"
+		end
+	end test
+	end ///
+
+end

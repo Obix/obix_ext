@@ -1,0 +1,127 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service text_file_finder
+
+	/// TD
+	all commands in se_string_finder should also have corresponding commands in this service for
+		- a single file
+		- a list of files
+		- a directory
+		- a list of files defined by file_list_in_file
+	end ///
+
+	command find_all_regex_in_file
+		%existing_file_input_argument
+		%supported_character_set_input_argument
+		in regex type:regex end
+		%system_error_handler_input_argument
+		
+		%result_or_error_void_output < &
+			result_type:string_find_result_list &
+			error_type:file_error >
+		
+		script
+			var string file_content
+			se_text_file_IO.restore_string_from_file ( &
+				file = i_file &
+				character_set = i_character_set &
+				error_handler = i_error_handler ) &
+				( v_file_content = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+
+			o_result = se_string_finder.find_all_regex ( &
+				string = v_file_content &
+				regex = i_regex )
+		end
+	end
+	
+
+	// find between 2 regexes
+
+	command find_all_between_2_regexes_in_directory
+		%existing_directory_input_argument
+		in file_filter type:file_filter voidable:yes default:void end
+		in include_child_directories type:yes_no end
+		%supported_character_set_input_argument
+		in start_regex type:regex end
+		in end_regex type:regex end
+		%system_error_handler_input_argument
+
+		%result_or_system_error_void_output < !map<key_type:file; item_type:!indexed_list<string_find_between_result>> >
+		
+		script
+			const !mutable_map<key_type:file; item_type:!indexed_list<string_find_between_result>> mutable_result = !mutable_map_factory<key_type:file; item_type:!indexed_list<string_find_between_result>>.create
+
+			var file_list file_list
+			i_directory.file_list ( &
+				filter = i_file_filter &
+				include_child_directories = i_include_child_directories &
+				error_handler = i_error_handler ) &
+				( v_file_list = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+
+			repeat for each file file in v_file_list
+				var !indexed_list<string_find_between_result> file_result
+				co_find_all_between_2_regexes_in_file ( &
+					file = c_file &
+					character_set = i_character_set &
+					start_regex = i_start_regex &
+					end_regex = i_end_regex &
+					error_handler = i_error_handler ) &
+				( v_file_result = result &
+				o_error = error )
+				if o_error #r void then
+					exit script
+				end if
+				
+				if v_file_result #r void then
+					c_mutable_result.add ( &
+						key = c_file &
+						item = v_file_result )
+				end if
+			end
+			
+			o_result = c_mutable_result.make_immutable
+		end
+	end
+
+	command find_all_between_2_regexes_in_file
+		%existing_file_input_argument
+		%supported_character_set_input_argument
+		in start_regex type:regex end
+		in end_regex type:regex end
+		%system_error_handler_input_argument
+
+		%result_or_system_error_void_output < !indexed_list<string_find_between_result> >
+		
+		script
+			var string file_content
+			se_text_file_IO.restore_string_from_file ( &
+				file = i_file &
+				character_set = i_character_set &
+				error_handler = i_error_handler ) &
+				( v_file_content = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+			
+			o_result = se_string_finder.find_all_between_2_regexes ( &
+				string = v_file_content &
+				start_regex = i_start_regex &
+				end_regex = i_end_regex )
+		end
+	end
+
+end service

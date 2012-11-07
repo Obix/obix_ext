@@ -1,0 +1,5 @@
+type primary_key
+
+	attribute primary_key type:zero_positive32 voidable:yes kind:readonly_constant end
+	
+end

@@ -1,0 +1,5 @@
+service parameter_constants
+
+	attribute unknown_parameter_id type:parameter_id default: fa_parameter_id.create ( "unknown_id"~ ) end
+
+end service

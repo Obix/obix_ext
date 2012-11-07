@@ -1,0 +1,91 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory keyboard_emulator type:keyboard_emulator
+
+	java
+		java.awt.Robot a_robot;
+	end java
+
+	command press_and_hold_key
+		script
+			java
+				a_robot.keyPress ( i_key.getValue().java_value() ) ;
+			end java
+		end
+	end
+
+	command release_key
+		script
+			java
+				a_robot.keyRelease ( i_key.getValue().java_value() ) ;
+			end java
+		end
+	end
+
+	command type_key
+		script
+			java
+				a_robot.keyPress ( i_key.getValue().java_value() ) ;
+				a_robot.keyRelease ( i_key.getValue().java_value() ) ;
+			end java
+		end
+	end
+
+	command type_characters
+		script
+			repeat for each character character in i_characters
+				java
+					// TD uppercase/lowercase is treated correctly only if caps lock is off
+					// should check caps lock status and invert logic if caps lock is on
+					char v_char = c_character.getValue().java_value();
+					if ( Character.isLetter ( v_char ) ) {
+						if ( Character.isUpperCase ( v_char ) ) {
+							a_robot.keyPress ( java.awt.event.KeyEvent.VK_SHIFT ) ;
+							a_robot.keyPress ( (int) v_char ) ;
+							a_robot.keyRelease ( (int) v_char ) ;
+							a_robot.keyRelease ( java.awt.event.KeyEvent.VK_SHIFT ) ;
+						}
+						else {
+							v_char = Character.toUpperCase ( v_char ) ;
+							a_robot.keyPress ( (int) v_char ) ;
+							a_robot.keyRelease ( (int) v_char ) ;
+						}
+					}
+					else if ( Character.isDigit ( v_char ) ) {
+						a_robot.keyPress ( (int) v_char ) ;
+						a_robot.keyRelease ( (int) v_char ) ;
+					}
+					else {
+						a_robot.keyPress ( java.awt.event.KeyEvent.VK_ALT ) ;
+						
+						String v_char_value = String.valueOf ( (int) v_char ) ;
+						for ( int i = 0; i < v_char_value.length(); i++ ) {
+							char v_digit = v_char_value.charAt(i) ;
+							int v_key = (int) v_digit - (int) '0' + java.awt.event.KeyEvent.VK_NUMPAD0 ;
+							a_robot.keyPress ( v_key ) ;
+							a_robot.keyRelease ( v_key ) ;
+						}
+
+						a_robot.keyRelease ( java.awt.event.KeyEvent.VK_ALT ) ;
+					}
+				end java
+			end repeat
+		end
+	end
+	
+	creator create
+		out result type:keyboard_emulator end
+
+		script
+			java
+				o_result.a_robot = new java.awt.Robot();
+			end java
+		end
+	end
+	
+end factory

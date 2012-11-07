@@ -1,0 +1,47 @@
+service JSON_scanner
+
+	attribute_list type:JSON_scanner_config
+
+		attribute strict_JSON_scanner_config default:fa_JSON_scanner_config.create ( &
+			allow_single_quoted_name_or_value = no &
+			convert_escape_characters = yes ) end
+		
+		attribute forgiving_scanner_config default:fa_JSON_scanner_config.create ( &
+			allow_single_quoted_name_or_value = yes &
+			convert_escape_characters = yes ) end
+	end
+
+	attribute_list type:JSON_token
+
+		attribute name_value_separator_token default:fa_JSON_token.create ( &
+			value = se_JSON_constants.name_value_separator.value &
+			position = void &
+			kind = ty_JSON_token_kind.name_value_separator ) end
+
+		attribute item_separator_token default:fa_JSON_token.create ( &
+			value = se_JSON_constants.item_separator.value &
+			position = void &
+			kind = ty_JSON_token_kind.item_separator ) end
+
+		attribute object_start_token default:fa_JSON_token.create ( &
+			value = se_JSON_constants.object_start.value &
+			position = void &
+			kind = ty_JSON_token_kind.object_start ) end
+
+		attribute object_end_token default:fa_JSON_token.create ( &
+			value = se_JSON_constants.object_end.value &
+			position = void &
+			kind = ty_JSON_token_kind.object_end ) end
+
+		attribute array_start_token default:fa_JSON_token.create ( &
+			value = se_JSON_constants.array_start.value &
+			position = void &
+			kind = ty_JSON_token_kind.array_start ) end
+
+		attribute array_end_token default:fa_JSON_token.create ( &
+			value = se_JSON_constants.array_end.value &
+			position = void &
+			kind = ty_JSON_token_kind.array_end ) end
+	end
+
+end

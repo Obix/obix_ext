@@ -1,0 +1,25 @@
+factory message_to_console_command_object type:command_object
+
+	attribute message type:non_empty_string private:yes end
+
+	command execute
+		script
+			if se_system.console #r void then
+				se_system.console.write_line ( a_message )
+			// else
+			//	se_system.out.write_line ( string = a_message )
+			end if
+		end script
+	end
+	
+	creator create
+		in message type:non_empty_string end
+
+		out result type:command_object end
+
+		script
+			o_result.a_message = i_message
+		end script
+	end
+
+end factory

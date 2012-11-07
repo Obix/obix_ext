@@ -1,0 +1,23 @@
+type servlet_response
+
+	attribute_list kind:variable setable:all
+		attribute content_type type:non_empty_string end
+		attribute content_length type:zero_positive32 voidable:yes end
+		attribute character_encoding type:non_empty_string end
+		// TD attribute locale type:locale end
+	end
+
+	attribute string_response_writer type:simple_string_writer kind:readonly_constant end
+	// TD attribute binary_response_writer type:binary_writer end
+
+	attribute is_response_committed type:yes_no kind:readonly_variable end
+
+/// TD
+flushBuffer() (done in writer)
+int getBufferSize()
+void reset() 
+void resetBuffer() 
+void setBufferSize(int size)  
+end ///
+
+end

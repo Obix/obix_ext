@@ -1,0 +1,183 @@
+service URL_utilities
+
+	java_header
+		import java.io.*;
+
+		import java.net.URL;
+		
+		import org.obix.obix_core.java.se_java_IO;
+		import org.obix.obix_core.java.fa_java_exception;
+	end java_header
+
+	command store_URL_text_content_to_string
+		in URL type:URL end
+		in character_set type:supported_character_set default:se_character_set_constants.UTF_8 end
+		%system_error_handler_input_argument
+		
+		%result_xor_resource_error_output < string >
+		
+		script
+			var java_exception java_exception = void
+
+			java
+				BufferedReader buffered_reader = null;
+				try {
+					URL url;
+					if ( i_URL instanceof fa_URL ) {
+						url = ((fa_URL) i_URL).java_URL();
+					} else {
+						url = new URL ( i_URL.getValue().java_value() );
+					}
+
+					StringBuilder string_builder = new StringBuilder();
+
+					InputStreamReader input_stream_reader = new InputStreamReader ( url.openStream(), i_character_set.getValue().java_value() );
+					int buffer_size = se_java_IO.default_IO_buffer_size;
+					buffered_reader = new BufferedReader ( input_stream_reader, buffer_size );
+
+					char[] buffer = new char[buffer_size] ;
+					int bytes_read ;
+					while ( ( bytes_read = buffered_reader.read ( buffer ) ) != -1 ) {
+						string_builder.append ( buffer, 0, bytes_read ) ;
+					}
+
+					o_result = new fa_string ( string_builder.toString() ) ;
+
+				} catch ( java.io.IOException e ) {
+					v_java_exception = new fa_java_exception ( e );
+
+				} finally {
+					se_java_IO.close_reader ( buffered_reader );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_result = void
+				o_error = fa_URL_read_error.create ( &
+					description = """The content of URL '{{i_URL}}' could not be read. The following error occured:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = i_URL )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+
+	command store_URL_text_content_to_new_file
+		in URL type:URL end
+		in character_set type:supported_character_set default:se_character_set_constants.UTF_8 end
+		%new_file_input_argument
+		%system_error_handler_input_argument
+		
+		%resource_error_output_argument
+		// out_check check: i_file.exists xor i_error #r void end
+
+		script
+			var java_exception java_exception = void
+
+			java
+				BufferedReader buffered_reader = null;
+				BufferedWriter buffered_writer = null ;
+				try {
+					URL url;
+					if ( i_URL instanceof fa_URL ) {
+						url = ((fa_URL) i_URL).java_URL();
+					} else {
+						url = new URL ( i_URL.getValue().java_value() );
+					}
+
+					InputStreamReader input_stream_reader = 
+						i_character_set == null ?
+						new InputStreamReader ( url.openStream() ) :
+						new InputStreamReader ( url.openStream(), i_character_set.getValue().java_value() );
+					int buffer_size = se_java_IO.default_IO_buffer_size;
+					buffered_reader = new BufferedReader ( input_stream_reader, buffer_size );
+
+					FileOutputStream file_output_stream = new FileOutputStream ( i_file.getValue().java_value() );
+					OutputStreamWriter output_stream_writer = 
+						i_character_set == null ?
+						new OutputStreamWriter ( file_output_stream ) :
+						new OutputStreamWriter ( file_output_stream, i_character_set.getValue().java_value() );
+					buffered_writer = new BufferedWriter ( output_stream_writer, buffer_size );
+
+					char[] buffer = new char[buffer_size] ;
+					int chars_read ;
+					while ( ( chars_read = buffered_reader.read ( buffer ) ) != -1 ) {
+						buffered_writer.write ( buffer, 0, chars_read ) ;
+					}
+
+				} catch ( java.io.IOException e ) {
+					v_java_exception = new fa_java_exception ( e );
+
+				} finally {
+					se_java_IO.close_reader ( buffered_reader );
+					se_java_IO.close_writer ( buffered_writer );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_URL_read_error.create ( &
+					description = """The content of URL '{{i_URL}}' could not be stored to file '{{i_file}}'. The following error occured:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = i_URL )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+
+	command store_URL_binary_content_to_new_file
+		in URL type:URL end
+		%new_file_input_argument
+		%system_error_handler_input_argument
+		
+		%resource_error_output_argument
+		// out_check check: i_file.exists xor i_error #r void end
+
+		script
+			var java_exception java_exception = void
+
+			java
+				BufferedInputStream buffered_input_stream = null;
+				BufferedOutputStream buffered_output_stream = null ;
+				try {
+					URL url;
+					if ( i_URL instanceof fa_URL ) {
+						url = ((fa_URL) i_URL).java_URL();
+					} else {
+						url = new URL ( i_URL.getValue().java_value() );
+					}
+
+					int buffer_size = se_java_IO.default_IO_buffer_size;
+
+					buffered_input_stream = new BufferedInputStream ( url.openStream(), buffer_size );
+
+					FileOutputStream file_output_stream = new FileOutputStream ( i_file.getValue().java_value() );
+					buffered_output_stream = new BufferedOutputStream ( file_output_stream, buffer_size );
+
+					byte[] buffer = new byte[buffer_size];
+					int bytes_read;
+					while ((bytes_read = buffered_input_stream.read(buffer)) != -1) {
+						buffered_output_stream.write ( buffer, 0, bytes_read );
+					}
+				} catch ( java.io.IOException e ) {
+					v_java_exception = new fa_java_exception ( e );
+
+				} finally {
+					se_java_IO.close_input_stream ( buffered_input_stream );
+					se_java_IO.close_output_stream ( buffered_output_stream );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_URL_read_error.create ( &
+					description = """The content of URL '{{i_URL}}' could not be stored to file '{{i_file}}'. The following error occured:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = i_URL )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+
+end service

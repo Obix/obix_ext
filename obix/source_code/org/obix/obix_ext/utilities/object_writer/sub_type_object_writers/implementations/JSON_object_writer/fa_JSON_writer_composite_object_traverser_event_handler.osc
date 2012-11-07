@@ -1,0 +1,51 @@
+factory JSON_writer_composite_object_traverser_event_handler type:composite_object_traverser_event_handler
+
+	attribute_list private:yes
+		attribute any_type_object_writer type:any_type_object_writer end
+		attribute writer type:simple_string_writer end
+	end
+
+	command on_composite_object_start
+		script
+			a_writer.write ( se_JSON_constants.object_start )
+		end
+	end
+	
+	command on_composite_object_end
+		script
+			a_writer.write ( se_JSON_constants.object_end )
+		end
+	end
+	
+	command on_composite_object_field
+		script
+			a_writer.write ( se_JSON_constants.double_quote_token_encloser )
+			// a_writer.write ( se_JSON_utilities.escape_JSON_data ( i_field_label.to_string ) )
+			a_writer.write ( se_JSON_utilities.escape_JSON_data ( i_field_id.to_string ) )
+			a_writer.write ( se_JSON_constants.double_quote_token_encloser )
+
+			a_writer.write ( se_JSON_constants.name_value_separator )
+
+			a_any_type_object_writer.write_object ( &
+				object = i_field_value &
+				writer = a_writer )
+
+			if not i_is_last_field then
+				a_writer.write ( se_JSON_constants.item_separator )
+			end if
+		end
+	end
+	
+	creator create
+		in any_type_object_writer type:any_type_object_writer end
+		in writer type:simple_string_writer end
+		
+		out result type:composite_object_traverser_event_handler end
+		
+		script
+			o_result.any_type_object_writer = i_any_type_object_writer
+			o_result.writer = i_writer
+		end
+	end
+
+end

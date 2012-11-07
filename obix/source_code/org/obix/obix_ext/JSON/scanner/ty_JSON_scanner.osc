@@ -1,0 +1,12 @@
+type JSON_scanner
+
+	attribute config type:JSON_scanner_config default:se_JSON_scanner.strict_JSON_scanner_config end
+
+	command scan
+		in JSON_string type:string end
+		%system_error_handler_input_argument
+		
+		%result_xor_data_error_list_output<JSON_token_list>
+	end
+	
+end

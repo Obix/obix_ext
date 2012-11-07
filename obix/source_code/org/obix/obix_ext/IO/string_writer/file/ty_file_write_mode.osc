@@ -1,0 +1,5 @@
+type file_write_mode
+
+	enumerated create_file; append_to_file; replace_file; create_or_append_to_file; create_or_replace_file end
+	
+end

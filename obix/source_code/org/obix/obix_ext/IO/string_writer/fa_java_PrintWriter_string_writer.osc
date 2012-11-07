@@ -1,0 +1,61 @@
+factory java_PrintWriter_string_writer type:simple_string_writer
+
+	// TD4 error handling; see fa_java_buffered_string_reader
+
+	java_header
+        import java.io.PrintWriter;
+	end java_header
+
+	java
+        PrintWriter a_PrintWriter;
+        
+        public fa_java_PrintWriter_string_writer ( PrintWriter i_PrintWriter ) {
+        	a_PrintWriter = i_PrintWriter;
+        }
+	end java
+
+
+	command write
+		script
+			java
+				a_PrintWriter.print ( i_string.getValue().java_value() );
+			end java
+		end
+	end
+
+	command write_line
+		script
+			java
+				a_PrintWriter.println ( i_string.getValue().java_value() );
+			end java
+		end
+	end
+
+	command write_new_line
+		script
+			java
+				a_PrintWriter.println();
+			end java
+		end
+	end
+	
+	command close
+		script
+			java
+				a_PrintWriter.close();
+			end java
+		end
+	end
+
+	command flush
+		script
+			java
+				a_PrintWriter.flush();
+			end java
+		end
+	end
+
+	
+	// no Obix creator!
+
+end factory

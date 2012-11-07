@@ -1,0 +1,11 @@
+type JSON_writable
+
+	command write
+		in writer type:simple_string_writer end
+		// TD (defines indents and other pretty printing parameters)
+		// in config type:JSON_writable_config end
+		
+		// %resource_error_output_argument
+	end
+
+end

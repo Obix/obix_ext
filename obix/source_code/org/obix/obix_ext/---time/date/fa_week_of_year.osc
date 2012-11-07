@@ -1,0 +1,5 @@
+factory week_of_year type:week_of_year
+
+	creator create kind:in_all end
+
+end factory

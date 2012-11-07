@@ -1,0 +1,10 @@
+type JSON_token_kind
+
+	enumerated &
+		quoted_name_or_value; unquoted_name_or_value; &
+		name_value_separator; item_separator; &
+		array_start; array_end; &
+		object_start; object_end &
+	end
+
+end type

@@ -1,0 +1,40 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+type simple_HTTP_server
+
+	attribute port type:network_port_number default:se_network_port_number.default_HTTP_port end
+
+	attribute IP_address type:IP_address voidable:yes default:void end
+
+	attribute default_request_handler type:simple_HTTP_request_handler default: fa_echo_HTTP_request_handler.create end
+
+	// TD attribute max_connections type:positive32 end
+
+	attribute is_running type:yes_no kind:readonly_variable end
+
+	command start
+		in_check check: not i_object_.is_running end
+		// TD error
+	end
+
+	command stop
+		in_check check: i_object_.is_running end
+	end
+	
+	command add_context
+		// TD error
+		in context_path type:non_empty_string end
+		in request_handler type:simple_HTTP_request_handler end
+	end
+
+	command remove_context
+		// TD error
+		in context_path type:non_empty_string end
+	end
+
+end type

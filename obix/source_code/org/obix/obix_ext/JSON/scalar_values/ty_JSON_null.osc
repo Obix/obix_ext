@@ -1,0 +1,5 @@
+type JSON_null
+
+	inherit JSON_value end
+
+end

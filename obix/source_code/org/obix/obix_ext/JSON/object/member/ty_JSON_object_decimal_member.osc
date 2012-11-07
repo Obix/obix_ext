@@ -1,0 +1,7 @@
+type JSON_object_decimal_member
+
+	inherit JSON_object_member
+		attribute value type:JSON_decimal end
+	end
+
+end

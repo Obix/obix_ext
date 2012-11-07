@@ -1,0 +1,85 @@
+generic factory mutable_parameter_list
+
+	param parameter_value_type end
+	
+	factory type:!gt_mutable_parameter_list<{parameter_value_type}>
+	
+		attribute map &
+			type:!mutable_map < &
+				key_type:parameter_id &
+				item_type:!gt_parameter<{parameter_value_type}> > &
+			default:!mutable_map_factory < &
+				key_type:parameter_id &
+				item_type:!gt_parameter<{parameter_value_type}> >.create &
+			private:yes end
+
+		attribute item_count
+			get
+				script
+					o_item_count = a_map.item_count
+				end
+			end
+		end
+
+		attribute is_empty
+			get
+				script
+					o_is_empty = a_map.is_empty
+				end
+			end
+		end
+
+		command item_iterator
+			script
+				o_result = a_map.item_iterator
+			end
+		end
+
+		command contains_parameter
+			script
+				o_result = a_map.contains_key ( i_id )
+			end
+		end
+		
+		command get_parameter_if_contained
+			script
+				o_result = a_map.get_item_if_contained ( i_id )
+			end
+		end
+
+		command add
+			script
+				a_map.add ( &
+					key = i_parameter.id &
+					item = i_parameter )
+			end
+		end
+
+		command add_2
+			script
+				const !gt_parameter<{parameter_value_type}> parameter = !gf_parameter<{parameter_value_type}>.create ( &
+					id = i_id &
+					value = i_value )
+				co_add ( c_parameter )
+			end
+		end
+
+		command add_or_replace
+			script
+				a_map.add_or_replace ( &
+					key = i_parameter.id &
+					item = i_parameter )
+			end
+		end
+
+		command make_immutable
+			script
+				o_result = !gf_parameter_list<{parameter_value_type}>.create ( a_map.make_immutable )
+			end
+		end
+		
+		creator create kind:in_all end
+
+	end
+		
+end

@@ -1,0 +1,11 @@
+type date_time_interval
+
+	attribute from type:local_date_time end
+
+	attribute to type:local_date_time end
+	
+	// TD attribute duration type:duration end
+	
+	attribute_check check: i_to >= i_from end
+	
+end type

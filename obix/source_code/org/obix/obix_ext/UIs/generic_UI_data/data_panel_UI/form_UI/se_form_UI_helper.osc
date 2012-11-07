@@ -1,0 +1,51 @@
+service form_UI_helper
+
+	command write_as_HTML
+		in writer type:simple_string_writer end
+		in form_UI type:form_UI end
+
+		script
+			if i_form_UI.title #r void then
+				i_writer.write_line ( """<h1 class="form_title">{{esc(i_form_UI.title)}}</h1>""" )
+			end if
+			
+			i_writer.write_line ( """<form>""" )
+
+			if i_form_UI.item_list #r void then
+				i_writer.write_line ( '''<table>''' )
+				repeat for each form_UI_item item in i_form_UI.item_list
+					c_item.write_as_HTML ( i_writer )
+				end repeat
+				i_writer.write_line ( '''</table>''' )
+			end if
+
+			case type of i_form_UI
+				when display_form_UI then
+
+				when edit_form_UI edit_form_UI then
+					c_edit_form_UI.submit_action.write_as_HTML ( i_writer )
+			end case
+			
+			if i_form_UI.action_list #r void then
+				repeat for each UI_action action in i_form_UI.action_list
+					i_writer.write_line ( '''<span class="UI_action">''' )
+					c_action.write_as_HTML ( i_writer )
+					i_writer.write_line ( '''</span>''' )
+				end repeat
+			end if
+			
+			i_writer.write_line ( '''</form>''' )
+		end
+	end
+
+	command esc private:yes
+		in string type:simple_string end
+		
+		out result type:string end
+		
+		script
+			o_result = se_HTML_utilities.escape_HTML_code ( i_string )
+		end
+	end
+
+end

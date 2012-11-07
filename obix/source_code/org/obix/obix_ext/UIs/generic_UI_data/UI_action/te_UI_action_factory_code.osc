@@ -1,0 +1,101 @@
+template UI_action_factory_code
+
+	attribute render_as_button type:yes_no private:yes end
+
+	command write_as_HTML
+		script
+			if a_render_as_button then
+				i_writer.write ( """<input type="button" value="{{esc(a_label)}}"""" )
+			else
+				i_writer.write ( "<a href='#'" )
+			end if
+			
+			const UI_action this_action = this
+			case type of c_this_action
+				when form_UI_action form_UI_action then
+					i_writer.write ( ''' onClick="submit_form(this.parentNode, ''' )
+				when UI_action then
+					i_writer.write ( ''' onClick="execute_action(''' )
+			end case
+			const string query = create_HTTP_query_from_parameters ( existing_query = void )
+			i_writer.write ( """this, '{{esc(a_command_path)}}', '{{c_query}}', 'div', '{{a_result_div}}', {{iif a_ask_confirmation then "true" else "false" end if}})""" )
+
+			if a_render_as_button then
+				i_writer.write_line ( '''"/>''' )
+			else
+				i_writer.write_line ( """; return false">{{esc(a_label)}}</a>""" )
+			end if
+		end
+	end
+
+
+	command_list private:yes
+
+		command create_HTTP_query_from_parameters
+			in existing_query type:simple_non_empty_string voidable:yes end
+			
+			out result type:string end
+
+			script
+				const mutable_string query = fa_mutable_string.create
+				
+				if i_existing_query #r void then
+					c_query.append ( i_existing_query )
+				end if
+
+				if a_constant_parameter_list #r void then
+					repeat for each key simple_non_empty_string name in a_constant_parameter_list
+						const string value = a_constant_parameter_list.require_item ( c_name )
+
+						if not c_query.is_empty then
+							c_query.append ( "&" )
+						end if
+
+						c_query.append ( se_HTML_utilities.escape_HTML_code ( c_name ) )
+						c_query.append ( "=" )
+						c_query.append ( se_HTML_utilities.escape_HTML_code ( c_value ) )
+					end repeat
+				end if
+				
+				o_result = c_query.to_string
+			end
+		end
+
+		command esc
+			in string type:simple_string end
+			
+			out result type:string end
+			
+			script
+				o_result = se_HTML_utilities.escape_HTML_code ( i_string )
+			end
+		end
+		
+	end
+
+	
+	creator create_for_button kind:in_all
+		script
+			o_result.label = i_label
+			o_result.command_path = i_command_path
+			o_result.constant_parameter_list = i_constant_parameter_list
+			o_result.ask_confirmation = i_ask_confirmation
+			o_result.result_div = i_result_div
+
+			o_result.render_as_button = yes
+		end
+	end
+
+	creator create_for_hyperlink kind:in_all
+		script
+			o_result.label = i_label
+			o_result.command_path = i_command_path
+			o_result.constant_parameter_list = i_constant_parameter_list
+			o_result.ask_confirmation = i_ask_confirmation
+			o_result.result_div = i_result_div
+
+			o_result.render_as_button = no
+		end
+	end
+
+end

@@ -1,0 +1,7 @@
+type form_UI_action
+
+	inherit UI_action end
+
+	// attribute form type:form_UI end
+	
+end

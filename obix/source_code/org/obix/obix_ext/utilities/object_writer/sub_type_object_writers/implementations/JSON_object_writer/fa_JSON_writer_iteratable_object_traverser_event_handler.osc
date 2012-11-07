@@ -1,0 +1,122 @@
+factory JSON_writer_iteratable_object_traverser_event_handler type:iteratable_object_traverser_event_handler
+
+	attribute_list private:yes
+		attribute any_type_object_writer type:any_type_object_writer end
+		attribute writer type:simple_string_writer end
+	end
+
+	command on_table_start
+		script
+			a_writer.write ( string = se_JSON_constants.array_start )
+		end
+	end
+	
+	command on_table_end
+		script
+			a_writer.write ( string = se_JSON_constants.array_end )
+		end
+	end
+	
+	command on_table_abort
+		script
+			// do nothing
+		end
+	end
+	
+	command on_table_header_start
+		script
+			a_writer.write ( string = se_JSON_constants.array_start )
+		end
+	end
+	
+	command on_table_header_end
+		script
+			a_writer.write ( string = se_JSON_constants.array_end )
+			
+			if i_row_count =r void or i_row_count > 0 then
+				a_writer.write ( string = se_JSON_constants.item_separator )
+			end if
+		end
+	end
+	
+	command on_row_number_header
+		script
+			a_writer.write ( '''"No."''' )
+			a_writer.write ( string = se_JSON_constants.item_separator )
+		end
+	end
+
+	command on_table_header_column
+		script
+			a_writer.write ( string = se_JSON_constants.double_quote_token_encloser )
+			if i_column_header_object #r void then
+				a_writer.write ( se_JSON_utilities.escape_JSON_data ( i_column_header_object.to_string ) )
+			end if
+			a_writer.write ( string = se_JSON_constants.double_quote_token_encloser )
+
+			if not i_is_last_column then
+				a_writer.write ( string = se_JSON_constants.item_separator )
+			end if
+		end
+	end
+	
+	command on_table_body_start
+		script
+			// do nothing
+		end
+	end
+	
+	command on_table_body_end
+		script
+			// do nothing
+		end
+	end
+	
+	command on_table_row_start
+		script
+			a_writer.write ( string = se_JSON_constants.array_start )
+		end
+	end
+	
+	command on_table_row_end
+		script
+			a_writer.write ( string = se_JSON_constants.array_end )
+
+			if not i_is_last_row then
+				a_writer.write ( string = se_JSON_constants.item_separator )
+			end if
+		end
+	end
+	
+	command on_row_number
+		script
+			a_writer.write ( i_row_number.to_string )
+			a_writer.write ( string = se_JSON_constants.item_separator )
+		end
+	end
+
+	command on_table_field_object
+		script
+			a_any_type_object_writer.write_object ( &
+				object = i_field_object &
+				writer = a_writer )
+
+			if not i_is_last_column then
+				a_writer.write ( string = se_JSON_constants.item_separator )
+			end if
+		end
+	end
+
+	creator create
+		in any_type_object_writer type:any_type_object_writer end
+		in writer type:simple_string_writer end
+
+		out result type:iteratable_object_traverser_event_handler end
+		
+		script
+			o_result.any_type_object_writer = i_any_type_object_writer
+			o_result.writer = i_writer
+		end
+	end
+
+end

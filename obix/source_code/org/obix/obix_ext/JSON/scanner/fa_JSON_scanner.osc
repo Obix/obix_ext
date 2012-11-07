@@ -1,0 +1,360 @@
+factory JSON_scanner type:JSON_scanner
+
+	attribute_list voidable:yes private:yes kind:variable
+		attribute JSON_string type:string end
+		attribute JSON_string_item_count type:zero_positive32 end
+		attribute current_index type:positive32 end
+		attribute system_error_handler type:system_error_handler end
+		attribute data_error_list type:!mutable_indexed_list<invalid_data_error> end
+	end
+
+	attribute_list type:regex private:yes
+		attribute no_white_space_regex default: fa_regex.create ( '''\S'''.value ) end
+		attribute invalid_unquoted_name_or_value_character default: fa_regex.create ( '''[\s:,"'{}\[\]]'''.value ) end
+		// attribute invalid_unquoted_name_or_value_character default: fa_regex.create ( '''[\s,"'}\]]'''.value ) end
+		attribute closing_double_quote_regex default: fa_regex.create ( '''[^\\]"'''.value ) end
+		attribute closing_single_quote_regex default: fa_regex.create ( '''[^\\]''''.value ) end
+	end
+
+	command scan
+		script
+			a_JSON_string = i_JSON_string
+			a_JSON_string_item_count = i_JSON_string.item_count
+			a_current_index = 1
+			a_system_error_handler = i_error_handler
+			a_data_error_list = !mutable_indexed_list_factory<invalid_data_error>.create
+
+			const mutable_JSON_token_list token_list = fa_mutable_JSON_token_list.create
+			
+			repeat while not end_of_scanning
+				const JSON_token token = scan_token
+				if c_token #r void then
+					c_token_list.append ( c_token )
+				end if
+			end repeat
+			
+			if a_data_error_list.is_empty then
+				o_result = c_token_list.make_immutable
+			else
+				o_error_list = a_data_error_list.make_immutable
+			end if
+		end
+	end
+	
+	command_list private:yes
+
+		command end_of_scanning
+			out result type:yes_no end
+
+			script
+				o_result = a_current_index > a_JSON_string_item_count
+			end
+		end
+
+		command scan_token
+			out result type:JSON_token voidable:yes end
+
+			script
+				find_token_start
+				
+				if end_of_scanning then
+					exit script
+				end if
+
+				if scan_string ( se_JSON_constants.double_quote_token_encloser ) then
+					o_result = scan_quoted_name_or_value ( a_closing_double_quote_regex )
+
+				else if a_config.allow_single_quoted_name_or_value and scan_string ( se_JSON_constants.single_quote_token_encloser ) then
+					o_result = scan_quoted_name_or_value ( a_closing_single_quote_regex )
+
+				else if scan_string ( se_JSON_constants.name_value_separator ) then
+					o_result = se_JSON_scanner.name_value_separator_token
+
+				else if scan_string ( se_JSON_constants.item_separator ) then
+					o_result = se_JSON_scanner.item_separator_token
+
+				else if scan_string ( se_JSON_constants.object_start ) then
+					o_result = se_JSON_scanner.object_start_token
+
+				else if scan_string ( se_JSON_constants.object_end ) then
+					o_result = se_JSON_scanner.object_end_token
+
+				else if scan_string ( se_JSON_constants.array_start ) then
+					o_result = se_JSON_scanner.array_start_token
+
+				else if scan_string ( se_JSON_constants.array_end ) then
+					o_result = se_JSON_scanner.array_end_token
+
+				// else if a_config.allow_unquoted_name_or_value then
+				else
+					// unquoted name or value token
+					const string_find_result find_result = find_regex ( a_invalid_unquoted_name_or_value_character )
+					if c_find_result =r void then
+						o_result = fa_JSON_token.create ( &
+							value = a_JSON_string.extract_from ( a_current_index ).value &
+							position = a_current_index &
+							kind = ty_JSON_token_kind.unquoted_name_or_value )
+						end_reached
+					else
+						const string token_value = a_JSON_string.extract_from_to ( &
+							from = a_current_index &
+							to = c_find_result.start_index - 1 )
+						o_result = fa_JSON_token.create ( &
+							value = c_token_value.value &
+							position = a_current_index &
+							kind = ty_JSON_token_kind.unquoted_name_or_value )
+						a_current_index = a_current_index + c_token_value.item_count
+					end if
+				///
+				else
+					error_detected ( "Invalid character " & a_JSON_string.extract_from_to ( &
+						from = a_current_index &
+						to = a_current_index ) )
+				end ///
+				end if
+			end
+		end
+		
+		command scan_quoted_name_or_value
+			in closing_symbol type:regex end
+
+			out result type:JSON_token voidable:yes end
+
+			script
+				// we are on the start of a single- or double-quoted token
+				const positive32 position = a_current_index
+				
+				a_current_index = a_current_index - 1 // go back to the opening quote
+				const string_find_result find_result = find_regex ( i_closing_symbol )
+				if c_find_result =r void then
+					error_detected ( '''Missing closing quote " or '''' )
+					end_reached
+					exit script
+				end if
+
+				a_current_index = a_current_index + 1 // go to the first character after the opening quote
+
+				var string token_value
+				const positive32 closing_quote_index = c_find_result.end_index
+				if c_closing_quote_index =v a_current_index then
+					v_token_value = se_string_constants.empty_string
+				else
+					v_token_value = a_JSON_string.extract_from_to ( &
+						from = a_current_index &
+						to = c_closing_quote_index - 1 )
+				end if
+				a_current_index = c_closing_quote_index + 1
+				
+				if a_config.convert_escape_characters then
+
+					// replace all escaped quotes within the string
+					if i_closing_symbol =r a_closing_double_quote_regex then
+						v_token_value = v_token_value.replace_all ( &
+							to_replace = se_JSON_constants.double_quote_escape &
+							replace_by = se_string_constants.double_quote )
+					else
+						v_token_value = v_token_value.replace_all ( &
+							to_replace = se_JSON_constants.single_quote_escape &
+							replace_by = se_string_constants.single_quote )
+					end if
+
+					// replace other string escape characters
+					v_token_value = v_token_value.replace_all ( &
+						to_replace = se_JSON_constants.new_line_escape &
+						replace_by = se_string_constants.line_feed )
+					v_token_value = v_token_value.replace_all ( &
+						to_replace = se_JSON_constants.carriage_return_escape &
+						replace_by = se_string_constants.carriage_return )
+					v_token_value = v_token_value.replace_all ( &
+						to_replace = se_JSON_constants.tab_escape &
+						replace_by = se_string_constants.tab )
+					v_token_value = v_token_value.replace_all ( &
+						to_replace = se_JSON_constants.backslash_escape &
+						replace_by = se_string_constants.backslash )
+					v_token_value = v_token_value.replace_all ( &
+						to_replace = se_JSON_constants.slash_escape &
+						replace_by = se_string_constants.slash )
+					v_token_value = v_token_value.replace_all ( &
+						to_replace = se_JSON_constants.backspace_escape &
+						replace_by = se_string_constants.backspace )
+					v_token_value = v_token_value.replace_all ( &
+						to_replace = se_JSON_constants.form_feed_escape &
+						replace_by = se_string_constants.form_feed )
+						
+					// TD4 replace Unicode escapes \uxxxx
+				end if
+
+				o_result = fa_JSON_token.create ( &
+					value = v_token_value.value &
+					position = c_position &
+					kind = ty_JSON_token_kind.quoted_name_or_value )
+			end
+		end
+
+		command find_token_start
+			script
+				var string_find_result find_result = find_regex ( a_no_white_space_regex )
+				if v_find_result #r void then
+					a_current_index = v_find_result.start_index
+				else
+					end_reached
+				end if
+			end
+		end
+
+		command scan_string
+			in string type:non_empty_string end
+			
+			out result type:yes_no end
+			
+			script
+				const positive32 item_count = i_string.item_count
+				
+				if a_current_index + c_item_count - 1 > a_JSON_string_item_count then
+					o_result = no
+				else
+					const string substring = se_string_extractor.extract_from_count ( &
+						string = a_JSON_string.to_non_empty_string &
+						from = a_current_index &
+						count = c_item_count )
+					o_result = c_substring =v i_string
+				end if
+				
+				if o_result then
+					a_current_index = a_current_index + c_item_count
+				end if
+			end
+		end
+
+		command find_regex
+			in regex type:regex end
+			
+			out result type:string_find_result voidable:yes end
+
+			script
+				o_result = se_string_finder.find_first_regex_from ( &
+					string = a_JSON_string &
+					regex = i_regex &
+					from = a_current_index )
+			end
+		end
+		
+		command end_reached
+			script
+				a_current_index = 1 + a_JSON_string_item_count
+			end
+		end
+		
+		command error_detected
+			in description type:string end
+			
+			script
+				const invalid_data_error error = fa_invalid_data_error.create ( &
+					description = """{{i_description}} at position {{a_current_index.to_string}}""" &
+					data = a_JSON_string )
+				a_data_error_list.append ( c_error )
+				a_system_error_handler.handle_system_error ( c_error )
+			end
+		end
+	end
+	
+	creator create kind:in_all end
+	
+	test
+		script
+			const JSON_scanner scanner = co_create ( se_JSON_scanner.forgiving_scanner_config )
+			var JSON_token_list result
+
+			v_result = c_scanner.scan.result ( JSON_string = "" )
+			verify v_result.is_empty
+
+			v_result = c_scanner.scan.result ( JSON_string = "abc" )
+			verify v_result.item_count =v 1
+			verify v_result.item_at_index ( 1 ) =v "abc"
+
+			v_result = c_scanner.scan.result ( JSON_string = "  abc	 " )
+			verify v_result.item_count =v 1
+			verify v_result.item_at_index ( 1 ) =v "abc"
+
+			v_result = c_scanner.scan.result ( JSON_string = "abc asd	jshdf     kjsfkjhs&*()lkhj  " )
+			verify v_result.item_count =v 4
+			verify v_result.item_at_index ( 1 ) =v "abc"
+			verify v_result.item_at_index ( 2 ) =v "asd"
+			verify v_result.item_at_index ( 3 ) =v "jshdf"
+			verify v_result.item_at_index ( 4 ) =v "kjsfkjhs&*()lkhj"
+			
+			v_result = c_scanner.scan.result ( JSON_string = '''"aa"''' )
+			verify v_result.item_count compare =v 1
+			verify v_result.item_at_index ( 1 ) compare =v "aa"
+
+			v_result = c_scanner.scan.result ( JSON_string = '''"a a"''' )
+			verify v_result.item_count compare =v 1
+			verify v_result.item_at_index ( 1 ) compare =v "a a"
+
+			v_result = c_scanner.scan.result ( JSON_string = '''"" "a" "a a"''' )
+			verify v_result.item_count compare =v 3
+			verify v_result.item_at_index ( 1 ) compare =v ""
+			verify v_result.item_at_index ( 2 ) compare =v "a"
+			verify v_result.item_at_index ( 3 ) compare =v "a a"
+
+			v_result = c_scanner.scan.result ( JSON_string = """'' 'a' 'a a'""" )
+			verify v_result.item_count =v 3
+			verify v_result.item_at_index ( 1 ) =v ""
+			verify v_result.item_at_index ( 2 ) =v "a"
+			verify v_result.item_at_index ( 3 ) =v "a a"
+
+			v_result = c_scanner.scan.result ( JSON_string = '''abc "program files" asd qwe:"a 1"''' )
+			verify v_result.item_count =v 6
+			verify v_result.item_at_index ( 1 ) =v "abc"
+			verify v_result.item_at_index ( 2 ) =v "program files"
+			verify v_result.item_at_index ( 3 ) =v "asd"
+			verify v_result.item_at_index ( 4 ) =v "qwe"
+			verify v_result.item_at_index ( 5 ) =v ":"
+			verify v_result.item_at_index ( 6 ) =v "a 1"
+
+			v_result = c_scanner.scan.result ( JSON_string = '''abc:qwe abc: qwe abc : qwe abc:"it is a game" "program files" "\" is a quote"''' )
+			verify v_result.item_count =v 14
+			verify v_result.item_at_index ( 1 ) =v "abc"
+			verify v_result.item_at_index ( 2 ) =v ":"
+			verify v_result.item_at_index ( 3 ) =v "qwe"
+			verify v_result.item_at_index ( 4 ) =v "abc"
+			verify v_result.item_at_index ( 5 ) =v ":"
+			verify v_result.item_at_index ( 6 ) =v "qwe"
+			verify v_result.item_at_index ( 7 ) =v "abc"
+			verify v_result.item_at_index ( 8 ) =v ":"
+			verify v_result.item_at_index ( 9 ) =v "qwe"
+			verify v_result.item_at_index ( 10 ) =v "abc"
+			verify v_result.item_at_index ( 11 ) =v ":"
+			verify v_result.item_at_index ( 12 ) =v "it is a game"
+			verify v_result.item_at_index ( 13 ) =v "program files"
+			verify v_result.item_at_index ( 14 ) =v '''" is a quote'''
+			
+			v_result = c_scanner.scan.result ( JSON_string = '''"he said: 'she said: \"WOW!\"'" "a' 1" 'a" 1'''' )
+			verify v_result.item_count =v 3
+			verify v_result.item_at_index ( 1 ) =v '''he said: 'she said: "WOW!"''''
+			verify v_result.item_at_index ( 2 ) =v "a' 1"
+			verify v_result.item_at_index ( 3 ) =v '''a" 1'''
+			
+			v_result = c_scanner.scan.result ( JSON_string = '''call tests.bat foo @input:"file c:\program files\params.txt; cmd_line; console_all" p1:v1 p2: v2 @output: "env RESULT"''' )
+			verify v_result.item_count =v 15
+			verify v_result.item_at_index ( 1 ) =v "call"
+			verify v_result.item_at_index ( 2 ) =v "tests.bat"
+			verify v_result.item_at_index ( 3 ) =v "foo"
+			verify v_result.item_at_index ( 4 ) =v "@input"
+			verify v_result.item_at_index ( 5 ) =v ":"
+			verify v_result.item_at_index ( 6 ) =v '''file c:\program files\params.txt; cmd_line; console_all'''
+			verify v_result.item_at_index ( 7 ) =v "p1"
+			verify v_result.item_at_index ( 8 ) =v ":"
+			verify v_result.item_at_index ( 9 ) =v "v1"
+			verify v_result.item_at_index ( 10 ) =v "p2"
+			verify v_result.item_at_index ( 11 ) =v ":"
+			verify v_result.item_at_index ( 12 ) =v "v2"
+			verify v_result.item_at_index ( 13 ) =v "@output"
+			verify v_result.item_at_index ( 14 ) =v ":"
+			verify v_result.item_at_index ( 15 ) =v "env RESULT"
+
+			var !indexed_list<invalid_data_error> data_error_list = c_scanner.scan.error_list ( JSON_string = '''qwe "foo''' )
+			verify v_data_error_list.item_count =v 1
+		end
+	end
+end

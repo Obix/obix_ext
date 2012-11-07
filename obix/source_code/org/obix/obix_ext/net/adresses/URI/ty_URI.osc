@@ -1,0 +1,78 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+type URI
+
+	inherit simple_non_empty_string
+		attribute a_value
+			and_check
+				script
+					const invalid_URI_error URI_error = se_URI_utilities.check_if_valid_URI ( i_value.to_string )
+					check URI_error =r void &
+						error_message: URI_error.description &
+						error_id: invalid_URI
+				end
+			end
+		end
+	end
+
+	attribute_list type:non_empty_string voidable:yes kind:readonly_constant
+	
+		attribute scheme end
+		attribute user_info end
+		attribute host end
+		attribute path end
+		attribute query end
+		attribute fragment end
+		attribute scheme_specific_part end
+		attribute authority end
+	
+		attribute encoded_user_info end
+		attribute encoded_path end
+		attribute encoded_query end
+		attribute encoded_fragment end
+		attribute encoded_scheme_specific_part end
+		attribute encoded_authority end
+	
+	end attribute_list
+
+	attribute port type:zero_positive32 voidable:yes kind:readonly_constant end
+
+	attribute_list type:yes_no kind:readonly_constant
+
+		attribute is_absolute_URI end
+		attribute is_opaque_URI end
+
+	end attribute_list
+	
+	attribute query_map type:string_string_map voidable:yes kind:readonly_constant end
+
+	command contains_query_name
+		in query_name type:simple_non_empty_string end
+		
+		out result type:yes_no end
+	end
+
+	command get_query_value_if_exists
+		in query_name type:simple_non_empty_string end
+
+		out result type:string voidable:yes end
+	end
+
+	command require_query_value
+		in query_name type:simple_non_empty_string check: i_object_.contains_query_name ( i_query_name ) end
+			
+		out result type:string voidable:yes end
+	end
+	
+	command to_URL
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output<URL>
+	end
+
+end type

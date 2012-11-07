@@ -1,0 +1,216 @@
+service JSON_converter
+
+	command object_to_JSON
+		in object type:any_type voidable:yes end
+		
+		out result type:string end
+		
+		script
+			const memory_string_writer writer = fa_memory_string_writer.create
+			write_object_as_JSON ( &
+				object = i_object &
+				writer = c_writer )
+			o_result = c_writer.result
+		end
+	end
+	
+	command write_object_as_JSON
+		in object type:any_type voidable:yes end
+		in writer type:simple_string_writer end
+		
+		script
+			const JSON_any_type_object_writer JSON_object_writer = fa_JSON_any_type_object_writer.create
+			c_JSON_object_writer.write_object ( &
+				object = i_object &
+				writer = i_writer )
+		end
+	end
+	
+	// similar command in se_reflection.create_object_from_string_list
+	// TD2 add support for objects and arrays and enumerateds and characters
+	command JSON_to_object
+		in JSON type:string end
+		in type_of_object type:type end
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output < any_type >
+		
+		script
+			const JSON_parser parser = fa_JSON_parser.create
+			var JSON_object JSON_object
+			c_parser.parse ( &
+				string = i_JSON &
+				error_handler = i_error_handler ) &
+				( v_JSON_object = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+
+			var factory factory
+			var factory_command creator
+			se_reflection.get_create_creator_for_type ( &
+				type = i_type_of_object &
+				error_handler = i_error_handler ) &
+				( v_factory = factory &
+				v_creator = creator &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+			
+			var string error_message = void
+			
+			section convert
+
+				const command_input_argument_list formal_input_argument_list = v_creator.script.input_argument_list
+				if c_formal_input_argument_list =r void or c_formal_input_argument_list.is_empty then
+					v_error_message = """No input arguments exist for creator 'create' of factory '{{v_factory.id_path}}'"""
+					exit section
+				end if
+
+				const mutable_indexed_any_type_list input_argument_list = fa_mutable_indexed_any_type_list.create
+				repeat for each command_input_argument formal_input_argument in c_formal_input_argument_list
+				
+					const simple_string JSON_attribute_name = c_formal_input_argument.id.suffix
+					if not v_JSON_object.contains_value ( c_JSON_attribute_name ) then
+						v_error_message = """Attribute '{{c_JSON_attribute_name}}' is required in the JSON string"""
+						exit section
+					end if
+					
+					var any_type input_argument_value
+					
+					const type formal_input_argument_type = se_reflection.library_repository.type_by_id_path ( c_formal_input_argument.object_type.type_id_path )
+					
+					// TD2 use 'generic_string_to_any_type_object_converter' and default values to cover more types (see fa_service_command_application_command.define_service_command_formal_input_parameter_list for example code)
+					// TD2 Also add support for null values and JSON object and array values
+
+					if se_reflection.is_scalar_type ( c_formal_input_argument_type ) then
+						if c_formal_input_argument_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.simple_string ) then
+						
+							var string JSON_string_attribute
+							v_JSON_object.get_string_value ( &
+								member_id = c_JSON_attribute_name &
+								error_handler = i_error_handler ) &
+								( v_JSON_string_attribute = result &
+								o_error = error )
+							if o_error #r void then
+								exit script
+							end if
+
+							if v_JSON_string_attribute #r void then
+
+								se_reflection.create_object_for_simple_string_type ( &
+									simple_string_type = c_formal_input_argument_type &
+									string_value = v_JSON_string_attribute.value &
+									error_handler = i_error_handler ) &
+									( v_input_argument_value = result &
+									o_error = error ) on_error:continue
+								if v_program_error_ #r void then
+									o_error = fa_invalid_data_error.create ( &
+										description = """'{{v_JSON_string_attribute}}' is an invalid value for type '{{c_formal_input_argument_type.id.suffix}}'. Reason:
+{{v_program_error_.description}}""" &
+										data = v_JSON_string_attribute )
+									i_error_handler.handle_system_error ( o_error )
+								end if
+								if o_error #r void then
+									exit script
+								end if
+								
+							else
+								v_input_argument_value = void
+							end if
+			
+						else if c_formal_input_argument_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.integer_number ) then
+						
+							var signed_integer32 JSON_integer_attribute
+							v_JSON_object.get_integer_value ( &
+								member_id = c_JSON_attribute_name &
+								error_handler = i_error_handler ) &
+								( v_JSON_integer_attribute = result &
+								o_error = error )
+							if o_error #r void then
+								exit script
+							end if
+
+							if v_JSON_integer_attribute #r void then
+
+								se_reflection.create_object_for_simple_integer32_type ( &
+									integer32_type = c_formal_input_argument_type &
+									integer32_value = v_JSON_integer_attribute.value &
+									error_handler = i_error_handler ) &
+									( v_input_argument_value = result &
+									o_error = error ) on_error:continue
+								if v_program_error_ #r void then
+									o_error = fa_invalid_data_error.create ( &
+										description = """'{{v_JSON_integer_attribute.to_string}}' is an invalid value for type '{{c_formal_input_argument_type.id.suffix}}'. Reason:
+{{v_program_error_.description}}""" &
+										data = v_JSON_integer_attribute )
+									i_error_handler.handle_system_error ( o_error )
+								end if
+								if o_error #r void then
+									exit script
+								end if
+								
+							else
+								v_input_argument_value = void
+							end if
+			
+						else if c_formal_input_argument_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.yes_no ) then
+						
+							v_JSON_object.get_yes_no_value ( &
+								member_id = c_JSON_attribute_name &
+								error_handler = i_error_handler ) &
+								( v_input_argument_value = result &
+								o_error = error )
+							if o_error #r void then
+								exit script
+							end if
+			
+						else
+							v_error_message = """Type '{{c_formal_input_argument_type.id_path}}' is currently not supported. Only string, integer and boolean types are currently supported."""
+							exit section
+						end if
+					else
+						v_error_message = "Only scalar types are currently supported."
+						exit section
+					end if
+					
+					c_input_argument_list.append ( v_input_argument_value )
+
+				end repeat
+				
+				se_reflection.execute_factory_command ( &
+					factory_id_path = v_factory.id_path &
+					command_id = v_creator.id &
+					input_argument_list = c_input_argument_list.make_immutable &
+					error_handler = i_error_handler ) &
+					( o_result = result &
+					o_error = error )
+
+			end section
+			
+			if v_error_message #r void then
+				o_error = fa_system_error.create ( description = v_error_message )
+				o_result = void
+				i_error_handler.handle_system_error ( o_error )
+			end if
+				
+		end
+		test
+			script
+				test i_JSON = """ { "id":"error_id", "description":"error_description" } """; i_type_of_object = se_reflection.library_repository.type_by_unprefixed_id_string ( "error" )
+				const error result_1 = v_result type_check:no
+				verify c_result_1.id =v "error_id"
+				verify c_result_1.description =v "error_description"
+
+				///
+				test i_JSON_string = ""; i_type_of_object = se_reflection.library_repository.type_by_unprefixed_id_string ( "scalar" )
+				verify v_result =r void
+				verify v_error #r void
+				end ///
+			end
+		end
+	end
+	
+end service

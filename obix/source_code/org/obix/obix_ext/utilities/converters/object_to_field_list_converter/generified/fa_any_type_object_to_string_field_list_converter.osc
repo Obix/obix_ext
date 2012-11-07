@@ -1,0 +1,63 @@
+factory any_type_object_to_string_field_list_converter type:any_type_object_to_field_list_converter
+
+	attribute_list private:yes
+		attribute type_attribute_list type:type_attribute_list voidable:yes end
+		attribute string_for_void_object type:string end
+	end
+
+	command convert
+		script
+			if a_type_attribute_list =r void then
+				o_result = fa_indexed_any_type_list.create_singleton ( &
+					iif i_object #r void &
+					then i_object.to_string &
+					else a_string_for_void_object end if )
+			else
+				const mutable_indexed_any_type_list list = fa_mutable_indexed_any_type_list.create
+				repeat for each type_attribute attribute in a_type_attribute_list
+					const any_type value = se_reflection.get_attribute_value_of_object.result ( &
+						object = i_object &
+						attribute_id = c_attribute.id )
+					c_list.append ( iif c_value #r void &
+						then c_value.to_string &
+						else a_string_for_void_object end if )
+				end repeat
+				o_result = c_list.make_immutable
+			end if
+		end
+	end
+
+	creator create
+		in type type:type end
+		in include_readonly_attributes type:yes_no default:no end
+		in string_for_void_object type:string default:se_any_type.void_object_as_string end
+		
+		out result type:any_type_object_to_field_list_converter end
+		
+		script
+			se_object_field_description_utilities.create_map_for_type_attributes ( &
+				type = i_type &
+				include_readonly_attributes = i_include_readonly_attributes &
+				fixed_field_type = se_common_type_id_paths.string ) &
+				( o_result.field_description_map = result &
+				o_result.type_attribute_list = type_attribute_list )
+			o_result.string_for_void_object = i_string_for_void_object
+		end
+	end
+	
+	creator create_for_single_field
+		in field_label type:any_type voidable:yes default:void end
+		in string_for_void_object type:string default:se_any_type.void_object_as_string end
+		
+		out result type:any_type_object_to_field_list_converter end
+		
+		script
+			o_result.field_description_map = se_object_field_description_utilities.create_singleton_map ( &
+				field_type = se_common_type_id_paths.string &
+				field_label = i_field_label )
+			o_result.type_attribute_list = void
+			o_result.string_for_void_object = i_string_for_void_object
+		end
+	end
+
+end

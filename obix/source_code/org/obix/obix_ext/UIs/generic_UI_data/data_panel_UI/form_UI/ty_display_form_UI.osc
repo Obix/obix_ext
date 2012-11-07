@@ -1,0 +1,7 @@
+type display_form_UI
+
+	inherit form_UI
+		attribute item_list type:display_form_UI_item_map end
+	end
+
+end

@@ -1,0 +1,8 @@
+type any_type_object_writer
+
+	command write_object
+		in object type:any_type voidable:yes end
+		in writer type:simple_string_writer end
+	end
+	
+end

@@ -1,0 +1,265 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service file_copies
+
+	java_header
+		import java.io.FileInputStream;
+		import java.io.FileOutputStream;
+		import java.io.IOException;
+
+		import java.nio.channels.FileChannel;
+
+		import org.obix.obix_core.java.se_java_IO;
+		import org.obix.obix_core.java.fa_java_exception;
+	end java_header
+
+	
+	command check_for_file_overwrite_permission
+		in file type:file end
+		in file_overwrite_policy type:file_overwrite_policy.enumerated end
+		// %system_error_handler_input_argument
+		
+		%system_error_output_argument
+		
+		script
+			if not i_file.exists then
+				exit script
+			end if
+
+			var string error_message
+
+			if i_file_overwrite_policy =r ty_file_overwrite_policy.never_overwrite then
+				v_error_message = """File '{{i_file}}' exists already and cannot be overwritten"""
+
+			else if i_file_overwrite_policy =r ty_file_overwrite_policy.overwrite_older_file then
+				if i_file.time_last_modified <= i_file.time_last_modified then
+					v_error_message = """A more recent file '{{i_file}}' exists already and cannot be overwritten"""
+				end if
+
+			else if i_file_overwrite_policy =r ty_file_overwrite_policy.always_overwrite then
+
+			else if i_file_overwrite_policy =r ty_file_overwrite_policy.ask_in_console or i_file_overwrite_policy =r ty_file_overwrite_policy.ask_in_GUI then
+				const string question = """Overwrite existing file '{{i_file}}'?"""
+				var yes_no answer
+				if i_file_overwrite_policy =r ty_file_overwrite_policy.ask_in_console then
+					v_answer = se_system.console.ask_yes_no.result ( &
+						message = c_question &
+						default_value = no )
+						// error_handler = i_error_handler )
+				else
+					v_answer = se_GUI_dialogs.ask_yes_no.response ( &
+						message = c_question )
+				end if
+
+				if not ( v_answer #r void and v_answer =v yes ) then
+					v_error_message = """File '{{i_file}}' exists already and cannot be overwritten"""
+				end if
+			
+			else
+				error """Unexpected i_file_overwrite_policy '{{i_file_overwrite_policy}}'"""
+			
+			end if
+			
+			if v_error_message #r void then
+				o_error = fa_system_error.create ( &
+					description = v_error_message )
+			end if
+				
+		end
+	end
+		
+	
+	command copy_file
+		%existing_file_input_argument
+		in destination_file type:file end
+		in file_overwrite_policy type:file_overwrite_policy.enumerated end
+		%system_error_handler_input_argument
+		in_check
+			script
+				check not ( i_file.to_current_OS_path =v i_destination_file.to_current_OS_path )
+			end
+		end
+	
+		%error_output_argument < file_copy_error >
+		out_check check: not ( i_error =r void and not i_destination_file.exists ) end
+		
+		script
+			const system_error file_overwrite_error = co_check_for_file_overwrite_permission ( &
+				file = i_destination_file &
+				file_overwrite_policy = i_file_overwrite_policy )
+			
+			if c_file_overwrite_error #r void then
+				o_error = fa_file_copy_error.create ( &
+					description = c_file_overwrite_error.description &
+					java_exception = void &
+					resource = i_file &
+					destination_file = i_destination_file )
+				i_error_handler.handle_system_error ( o_error )
+				exit script
+			end if
+				
+			var java_exception java_exception = void
+			java
+				FileChannel reader_channel = null;
+				FileChannel writer_channel = null;
+				try {
+					reader_channel = new FileInputStream ( i_file.getValue().java_value() ).getChannel();
+					writer_channel = new FileOutputStream ( i_destination_file.getValue().java_value() ).getChannel();
+					long size = reader_channel.size() ;
+					reader_channel.transferTo ( 0, size, writer_channel ) ;
+
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+
+				} finally {
+					se_java_IO.close_file_channel ( reader_channel );
+					se_java_IO.close_file_channel ( writer_channel );
+				}
+			end java
+			
+			if v_java_exception #r void then
+				o_error = fa_file_copy_error.create ( &
+					description = """File '{{i_file}}' could not be copied to '{{i_destination_file}}'. The following error occured:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = i_file &
+					destination_file = i_destination_file )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+
+		end
+	end
+	
+	command copy_file_to_directory
+		%existing_file_input_argument
+		%existing_directory_input_argument
+		in file_overwrite_policy type:file_overwrite_policy.enumerated end
+		%system_error_handler_input_argument
+		in_check
+			script
+				check not ( i_file.directory.to_current_OS_path =v i_directory.to_current_OS_path )
+			end
+		end
+		
+		%error_output_argument < file_copy_error >
+		
+		script
+			o_error = copy_file ( &
+				file = i_file &
+				destination_file = fa_file.create_from_directory_and_name ( &
+					directory = i_directory &
+					name = i_file.name ) &
+				file_overwrite_policy = i_file_overwrite_policy &
+				error_handler = i_error_handler )
+		end
+	end
+	
+	command copy_directory
+		in source type:directory check: i_source.exists end
+		in destination_parent type:directory check: i_destination_parent.exists end
+		in file_overwrite_policy type:file_overwrite_policy.enumerated end
+		in include_child_directories type:yes_no end
+		%system_error_handler_input_argument
+		in_check
+			script
+				check not ( i_source =v i_destination_parent )
+			end script
+		end in_check
+		
+		%error_output_argument < directory_or_file_error >
+	
+		script
+			const directory destination_directory = destination_parent.append_child_name ( i_source.name )
+			if not c_destination_directory.exists then
+				c_destination_directory.create_on_device
+			end if
+			
+			o_error = co_copy_directory_content ( &
+				source = i_source &
+				destination = c_destination_directory &
+				file_overwrite_policy = i_file_overwrite_policy &
+				include_child_directories = i_include_child_directories &
+				error_handler = i_error_handler )
+		end
+	end
+
+	command copy_directory_content
+		in source type:directory check: i_source.exists end
+		in destination type:directory check: i_destination.exists end
+		in file_overwrite_policy type:file_overwrite_policy.enumerated end
+		in include_child_directories type:yes_no end
+		%system_error_handler_input_argument
+		in_check
+			script
+				check not ( i_source =v i_destination )
+			end script
+		end in_check
+		
+		%error_output_argument < directory_or_file_error >
+	
+		script
+			var file_list file_list
+			i_source.file_list ( &
+				include_child_directories = no &
+				error_handler = i_error_handler ) &
+				( v_file_list = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+
+			repeat for each file file in v_file_list
+				const file_copy_error file_copy_error = co_copy_file_to_directory ( &
+					file = c_file &
+					directory = i_destination &
+					file_overwrite_policy = i_file_overwrite_policy &
+					error_handler = i_error_handler )
+				if c_file_copy_error #r void then
+					o_error = c_file_copy_error
+				end if
+			end repeat
+
+			if i_include_child_directories then
+				var directory_list child_directory_list
+				i_source.directory_list ( &
+					include_child_directories = no &
+					error_handler = i_error_handler ) &
+					( v_child_directory_list = result &
+					o_error = error )
+				if o_error #r void then
+					exit script
+				end if
+
+				repeat for each directory child_directory in child_directory_list
+
+					const directory destination_directory = &
+						i_destination.append_child_name ( child_directory.name )
+					if not destination_directory.exists then
+						const create_directory_error create_directory_error = destination_directory.create_on_device_including_parents ( i_error_handler )
+						if c_create_directory_error #r void then
+							o_error = c_create_directory_error
+							next repeat
+						end if
+					end if
+
+					const directory_or_file_error directory_or_file_error = copy_directory_content ( &
+						source = child_directory &
+						destination = destination_directory &
+						file_overwrite_policy = i_file_overwrite_policy &
+						include_child_directories = yes &
+						error_handler = i_error_handler )
+					if c_directory_or_file_error #r void then
+						o_error = c_directory_or_file_error
+					end if
+				end repeat
+			end if
+
+		end script
+	end command
+
+end service

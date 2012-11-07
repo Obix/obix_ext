@@ -1,0 +1,9 @@
+type JPA_persist_object_error default_factory:yes
+
+	inherit JPA_error
+		attribute a_id default:"JPA_persist_object_error" end
+	end
+	
+	attribute object type:any_type end
+
+end

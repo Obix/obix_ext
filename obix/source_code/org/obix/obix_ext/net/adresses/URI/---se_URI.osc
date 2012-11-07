@@ -1,0 +1,342 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service URI
+
+	java_header
+		import java.io.UnsupportedEncodingException;
+		
+		import java.net.URLDecoder;
+		import java.net.URLEncoder;
+		import java.net.URI;
+		import java.net.URISyntaxException;
+
+		import li_obix.java.fa_java_exception;
+	end java_header
+
+	attribute path_separator type:non_empty_string default: "/" end
+
+	attribute query_separator type:non_empty_string default: "?" end
+	attribute parameter_assignment_separator type:non_empty_string default: "&" end
+	attribute parameter_assignment_symbol type:non_empty_string default: "=" end
+	
+	attribute string_to_URI_converter type:string_to_URI_converter default: fa_string_to_URI_converter.create end
+	
+	command check_if_valid_URI
+		in string type:simple_string end
+		
+		%error_output_argument < invalid_URI_error >
+		
+		script
+			var java_exception java_exception
+
+			java
+				try {
+					URI URI = new URI ( i_string.getValue().java_value() );
+				}
+				catch ( URISyntaxException e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+			
+			if v_java_exception #r void then
+				o_error = fa_invalid_URI_error.create ( &
+					description = """'{{i_string}}' is not a valid URI. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					data = i_string )
+			end if
+		end
+	end
+
+	command encode_string
+		in string type:simple_string end
+		%supported_character_set_input_argument
+		in convert_space_to_plus type:yes_no default:no end
+		%system_error_handler_input_argument
+
+		%result_xor_system_error_output<string>
+		
+		script
+			var java_exception java_exception
+
+			java
+				String java_value = i_string.getValue().java_value();
+
+				try {
+					String result = URLEncoder.encode ( java_value, i_character_set.getValue().java_value() );
+
+					if ( ! i_convert_space_to_plus.java_value() ) {
+						// URLEncoder converts " " to "+" and "+" to "%2B". Therefore replace those characters
+						result = result.replaceAll ( "\\+", " " );
+						result = result.replaceAll ( "%2B", "+" );
+					}
+
+					o_result = new fa_string ( result );
+				} catch ( UnsupportedEncodingException e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_invalid_data_error.create ( &
+					description = """'{{i_string}}' is not a valid URL component. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					data = i_string )
+				i_error_handler.handle_system_error ( o_error )
+				o_result = void
+			end if
+		end
+		test
+			script
+				test string = "<1 + 1>"; character_set = se_character_set_constants.UTF_8
+				verify v_result compare =v "%3C1 + 1%3E"
+
+				test string = "<1 + 1>"; character_set = se_character_set_constants.UTF_8; convert_space_to_plus = yes
+				verify v_result compare =v "%3C1+%2B+1%3E"
+			end
+		end
+	end
+	
+	command decode_string
+		in string type:simple_string end
+		%supported_character_set_input_argument
+		in convert_plus_to_space type:yes_no default:no end
+		%system_error_handler_input_argument
+
+		%result_xor_system_error_output<string>
+		
+		script
+			var java_exception java_exception
+
+			java
+				String java_value = i_string.getValue().java_value();
+
+				if ( ! i_convert_plus_to_space.java_value() ) {
+					// URLDecoder converts "+" to " ". Therefore escape "+" with "%2b"
+					java_value = java_value.replaceAll ( "\\+", "%2B" );
+				}
+
+				try {
+					o_result = new fa_string ( URLDecoder.decode ( java_value, i_character_set.getValue().java_value() ) );
+				} catch ( UnsupportedEncodingException e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+
+			if v_java_exception #r void then
+				o_error = fa_invalid_data_error.create ( &
+					description = """'{{i_string}}' is not a valid URL component. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					data = i_string )
+				i_error_handler.handle_system_error ( o_error )
+				o_result = void
+			end if
+		end
+		test
+			script
+				test string = "%3C1 + 1%3E"; character_set = se_character_set_constants.UTF_8
+				verify v_result compare =v "<1 + 1>"
+
+				test string = "%3C1+%2B+1%3E"; character_set = se_character_set_constants.UTF_8; convert_plus_to_space = yes
+				verify v_result compare =v "<1 + 1>"
+			end
+		end
+	end
+	
+	command create_encoded_query_string
+		in unencoded_parameter_assignment_list type:string_string_map check: not i_unencoded_parameter_assignment_list.is_empty end
+		%supported_character_set_input_argument
+		in convert_space_to_plus type:yes_no default:no end
+		%system_error_handler_input_argument
+
+		%result_xor_system_error_output<non_empty_string>
+		
+		script
+			var mutable_string query = fa_mutable_string.create
+			repeat for each key non_empty_string key in i_unencoded_parameter_assignment_list counter: counter
+
+				if c_counter > 1 then
+					v_query.co_append ( a_parameter_assignment_separator )
+				end if
+				
+				var string query_name
+				co_encode_string ( &
+					string = c_key &
+					character_set = i_character_set &
+					convert_space_to_plus = i_convert_space_to_plus &
+					error_handler = i_error_handler ) &
+					( v_query_name = result &
+					o_error = error )
+				if o_error #r void then
+					exit script
+				end if
+				v_query.co_append ( v_query_name )
+
+				var string value = i_unencoded_parameter_assignment_list.co_require_item ( c_key )
+				if v_value #r void then
+					v_query.co_append ( a_parameter_assignment_symbol )
+
+					var string query_value
+					co_encode_string ( &
+						string = v_value &
+						character_set = i_character_set &
+						convert_space_to_plus = i_convert_space_to_plus &
+						error_handler = i_error_handler ) &
+						( v_query_value = result &
+						o_error = error )
+					if o_error #r void then
+						exit script
+					end if
+					v_query.co_append ( v_query_value )
+				end if
+			end repeat
+
+			o_result = v_query.to_non_empty_string
+		end
+		test
+			script
+				const string_string_mutable_map map = fa_string_string_mutable_map.create
+				c_map.add ( &
+					key = "name" &
+					item = "value" )
+				test unencoded_parameter_assignment_list = c_map.to_immutable; character_set = se_character_set_constants.UTF_8
+				verify v_result compare =v "name=value"
+
+				c_map.add ( &
+					key = '''n + /\''' &
+					item = "v + {}" )
+				test unencoded_parameter_assignment_list = c_map.to_immutable; character_set = se_character_set_constants.UTF_8
+				verify v_result compare =v "name=value&n + %2F%5C=v + %7B%7D"
+
+				test unencoded_parameter_assignment_list = c_map.to_immutable; character_set = se_character_set_constants.UTF_8; convert_space_to_plus = yes
+				verify v_result compare =v "name=value&n+%2B+%2F%5C=v+%2B+%7B%7D"
+			end
+		end
+	end
+	
+	command create_decoded_parameter_assignment_list
+		in encoded_query type:non_empty_string end
+		%supported_character_set_input_argument
+		%system_error_handler_input_argument
+
+		%result_xor_system_error_output<mutable_string_parameter_list>
+
+		script
+			o_result = fa_mutable_string_parameter_list.co_create
+			
+			var string error_message
+			const indexed_string_list assignment_list = i_encoded_query.split ( "&" )
+			repeat for each string assignment in assignment_list
+				if c_assignment.item_count < 2 then
+					v_error_message = """'{{c_assignment}}' is invalid."""
+					exit repeat
+				end if
+				const indexed_string_list assignment_items = c_assignment.split ( "=" )
+				if c_assignment_items.item_count #v 2 then
+					v_error_message = """'{{c_assignment}}' is invalid because '=' is missing."""
+					exit repeat
+				end if
+				
+				var string name = c_assignment_items.first_item
+				if v_name.is_empty then
+					v_error_message = """'{{c_assignment}}' is invalid because the name is empty."""
+					exit repeat
+				end if
+				co_decode_string ( &
+					string = v_name &
+					character_set = i_character_set &
+					error_handler = i_error_handler ) &
+					( v_name = result &
+					o_error = error )
+				if o_error #r void then
+					v_error_message = """'{{c_assignment}}' is invalid. Reason:
+{{o_error.description}}."""
+					exit repeat
+				end if
+				var parameter_id parameter_id
+				fa_parameter_id.create_from_string ( &
+					string = v_name &
+					error_handler = i_error_handler ) &
+					( v_parameter_id = result &
+					o_error = error )
+				if o_error #r void then
+					v_error_message = """'{{v_name}}' is an invalid parameter identifier. Reason:
+{{o_error.description}}."""
+					exit repeat
+				end if
+					
+				
+				if o_result.contains_parameter ( v_parameter_id ) then
+					v_error_message = """'{{c_assignment}}' is invalid because '{{v_parameter_id}}' is already defined."""
+					exit repeat
+				end if
+				
+				var string value = c_assignment_items.last_item
+				if not v_value.is_empty then
+					co_decode_string ( &
+						string = v_value &
+						character_set = i_character_set &
+						error_handler = i_error_handler ) &
+						( v_value = result &
+						o_error = error )
+					if o_error #r void then
+						v_error_message = """'{{c_assignment}}' is invalid. Reason:
+{{o_error.description}}."""
+						exit repeat
+					end if
+				end if
+				
+				o_result.add ( fa_string_parameter.create ( &
+					id = v_parameter_id &
+					value = v_value ) )
+			end repeat
+			
+			if v_error_message #r void then
+				o_error = fa_invalid_data_error.create ( &
+					description = """'{{i_encoded_query}}' is an invalid quey string. Reason:
+{{v_error_message}}""" &
+					data = i_encoded_query )
+				i_error_handler.handle_system_error ( o_error )
+				o_result = void
+				exit script
+			end if
+		end
+		test
+			script
+				test encoded_query = "n1=v1&n2=v2"; character_set = se_character_set_constants.UTF_8
+				verify v_result.item_count =v 2
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "n1"~ ) ).value compare =v "v1"
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "n2"~ ) ).value compare =v "v2"
+
+				test encoded_query = "@f=html&expression=1 + 1"; character_set = se_character_set_constants.UTF_8
+				verify v_result.item_count =v 2
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "@f"~ ) ).value compare =v "html"
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "expression"~ ) ).value compare =v "1 + 1"
+
+				test encoded_query = "p1=&p2=v2"; character_set = se_character_set_constants.UTF_8
+				verify v_result.item_count =v 2
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "p1"~ ) ).value compare =v ""
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "p2"~ ) ).value compare =v "v2"
+
+				test encoded_query = "p1=%3C1 + 1%3E"; character_set = se_character_set_constants.UTF_8
+				verify v_result.item_count =v 1
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "p1"~ ) ).value compare =v "<1 + 1>"
+
+				test encoded_query = "p="; character_set = se_character_set_constants.UTF_8
+				verify v_result.item_count =v 1
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "p"~ ) ).value compare =v ""
+
+				test encoded_query = "qwe"; character_set = se_character_set_constants.UTF_8
+				verify v_error #r void
+			end
+		end
+	end
+	
+end service

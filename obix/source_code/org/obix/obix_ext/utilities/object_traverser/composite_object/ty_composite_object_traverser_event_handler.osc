@@ -1,0 +1,21 @@
+type composite_object_traverser_event_handler
+
+	command on_composite_object_start
+		in object type:any_type end
+		in field_count type:positive32 end
+	end
+	
+	command on_composite_object_end
+		in object type:any_type end
+		in field_count type:positive32 end
+	end
+	
+	command on_composite_object_field
+		in field_id type:simple_non_empty_string end
+		in field_label type:any_type end
+		in field_value type:any_type voidable:yes end
+		in field_index type:positive32 end
+		in is_last_field type:yes_no end
+	end
+
+end

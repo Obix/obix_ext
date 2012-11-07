@@ -1,0 +1,43 @@
+factory XML_writer_composite_object_traverser_event_handler type:composite_object_traverser_event_handler
+
+	attribute_list private:yes
+		attribute any_type_object_writer type:any_type_object_writer end
+		attribute writer type:simple_string_writer end
+	end
+
+	command on_composite_object_start
+		script
+			a_writer.write ( "<object>" )
+		end
+	end
+	
+	command on_composite_object_end
+		script
+			a_writer.write ( "</object>" )
+		end
+	end
+	
+	command on_composite_object_field
+		script
+			// a_writer.write ( """<att id="{{se_XML_utilities.escape_XML_data ( i_field_label.to_string )}}">""" )
+			a_writer.write ( """<att id="{{se_XML_utilities.escape_XML_data ( i_field_id.to_string )}}">""" )
+			a_any_type_object_writer.write_object ( &
+				object = i_field_value &
+				writer = a_writer )
+			a_writer.write ( "</att>" )
+		end
+	end
+	
+	creator create
+		in any_type_object_writer type:any_type_object_writer end
+		in writer type:simple_string_writer end
+		
+		out result type:composite_object_traverser_event_handler end
+		
+		script
+			o_result.any_type_object_writer = i_any_type_object_writer
+			o_result.writer = i_writer
+		end
+	end
+
+end

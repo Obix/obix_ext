@@ -1,0 +1,27 @@
+generic type verified_parameter_list_creator
+
+	param parameter_value_type end
+	
+	type
+		command create_verified_parameter_list
+			// in unverified_parameter_list type:!gt_parameter_list<*> end
+			in unverified_parameter_list type:!gt_parameter_list<{parameter_value_type}> voidable:yes end
+			in formal_parameter_list type:!gt_formal_parameter_list<{parameter_value_type}> voidable:yes end
+			%system_error_handler_input_argument
+			
+			%result_or_error_list_void_output < &
+				result_type: !gt_parameter_list<{parameter_value_type}> &
+				error_type: parameter_error >
+		end
+		
+		command create_parameter_list_from_default_values
+			in formal_parameter_list type:!gt_formal_parameter_list<{parameter_value_type}> check: not i_formal_parameter_list.has_required_parameters end
+			%system_error_handler_input_argument
+			
+			%result_or_error_list_void_output < &
+				result_type: !gt_parameter_list<{parameter_value_type}> &
+				error_type: parameter_error >
+		end
+	end
+
+end

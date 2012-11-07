@@ -1,0 +1,7 @@
+type JSON_object_array_member
+
+	inherit JSON_object_member
+		attribute value type:JSON_array end
+	end
+
+end

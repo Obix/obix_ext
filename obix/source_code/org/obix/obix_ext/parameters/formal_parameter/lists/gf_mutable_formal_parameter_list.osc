@@ -1,0 +1,60 @@
+generic factory mutable_formal_parameter_list
+
+	param parameter_value_type end
+	
+	factory type:!gt_mutable_formal_parameter_list<{parameter_value_type}>
+	
+		attribute map &
+			type:!mutable_map < &
+				key_type:parameter_id &
+				item_type:!gt_formal_parameter<{parameter_value_type}> > &
+			default:!mutable_map_factory < &
+				key_type:parameter_id &
+				item_type:!gt_formal_parameter<{parameter_value_type}> >.create &
+			private:yes end
+
+		attribute alternative_map &
+			type:!mutable_map < &
+				key_type:parameter_id &
+				item_type:!gt_formal_parameter<{parameter_value_type}> > &
+			default:!mutable_map_factory < &
+				key_type:parameter_id &
+				item_type:!gt_formal_parameter<{parameter_value_type}> >.create &
+			private:yes end
+
+
+		command contains_formal_parameter
+			script
+				o_result = a_map.contains_key ( i_parameter_id_or_alternative_id ) or &
+					a_alternative_map.contains_key ( i_parameter_id_or_alternative_id )
+			end
+		end
+		
+		command add
+			script
+				a_map.add ( &
+					key = i_formal_parameter.id &
+					item = i_formal_parameter )
+				
+				if i_formal_parameter.alternative_id #r void then
+					a_alternative_map.add ( &
+						key = i_formal_parameter.alternative_id &
+						item = i_formal_parameter )
+				end if
+			end
+		end
+
+		command make_immutable
+			script
+				o_result = !gf_formal_parameter_list<{parameter_value_type}>.create_from_maps ( &
+					map = a_map.make_immutable &
+					alternative_map = a_alternative_map.make_immutable &
+					validator = i_validator )
+			end
+		end
+
+		creator create kind:in_all end
+
+	end
+		
+end

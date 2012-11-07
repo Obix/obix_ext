@@ -1,0 +1,127 @@
+factory XML_file_parameter_storage type:text_file_parameter_storage
+
+	java_header
+		import java.io.FileOutputStream;
+		import java.io.FileInputStream;
+		import java.io.IOException;
+
+		import java.util.Properties;
+		import java.util.Map;
+		
+		import org.obix.obix_core.java.fa_java_exception;
+		import org.obix.obix_core.java.se_java_IO;
+	end java_header
+
+	command store_parameter_list
+		script
+			java
+				Properties properties = new Properties();
+			end java
+			
+			repeat for each !gt_parameter<*> parameter in i_parameter_list
+				const string value = iif c_parameter.value #r void then c_parameter.value.to_string else se_any_type.void_object_as_string.to_string end if
+				java
+					properties.setProperty ( c_parameter.getId().getValue().java_value(), c_value.java_value() );
+				end java
+			end repeat
+			
+			var java_exception java_exception = void
+			java
+				FileOutputStream output_stream = new FileOutputStream ( i_file.getValue().java_value() );
+				try {
+					properties.storeToXML ( output_stream, null );
+				} catch ( IOException e ) {
+					v_java_exception = new fa_java_exception ( e );
+				} finally {
+					se_java_IO.close_output_stream ( output_stream );
+				}
+			end java
+			
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					id = "store_parameters_to_XML_file" &
+					description = """Parameters could not be stored to file '{{i_file}}'. The following error occured:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = i_file )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+	
+	command restore_parameter_list
+		script
+			var string_parameter_list string_parameter_list
+			var resource_error error
+			co_restore_string_parameter_list ( &
+				file = i_file &
+				error_handler = i_error_handler ) &
+				( v_string_parameter_list = result &
+				v_error = error )
+
+			if v_error #r void then
+				o_error_list = !indexed_list_factory<resource_error>.create_singleton ( v_error )
+				exit script
+			end if
+
+			const !gt_verified_parameter_list_creator<string> parameter_list_creator = !gf_verified_parameter_list_creator<string>.create
+			c_parameter_list_creator.create_verified_parameter_list ( &
+				unverified_parameter_list = v_string_parameter_list &
+				formal_parameter_list = i_formal_parameter_list &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error_list = error_list )
+		end
+	end
+	
+	command restore_string_parameter_list
+		script
+			var java_exception java_exception = void
+			java
+				Properties properties = new Properties();
+				FileInputStream input_stream = new FileInputStream ( i_file.getValue().java_value() );
+				try {
+					properties.loadFromXML ( input_stream );
+				} catch ( IOException e ) {
+					v_java_exception = new fa_java_exception ( e );
+				} finally {
+					se_java_IO.close_input_stream ( input_stream );
+				}
+			end java
+			
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					id = "restore_parameters_from_XML_file" &
+					description = """Parameters could not be restored from file '{{i_file}}'. The following error occured:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					resource = i_file )
+				i_error_handler.handle_system_error ( o_error )
+				exit script
+			end if
+			
+			const mutable_string_parameter_list mutable_list = fa_mutable_string_parameter_list.create
+			var string_value id
+			var string value
+			java
+				for ( Map.Entry entry: properties.entrySet() ) {
+					v_id = new fa_string_value ((String) entry.getKey() );
+					v_value = new fa_string ((String) entry.getValue() );
+					end java
+						const string_parameter parameter = fa_string_parameter.create ( &
+							id = fa_parameter_id.create ( v_id ) &
+							value = iif v_value #v se_any_type.void_object_as_string then v_value else void end if )
+						c_mutable_list.add ( c_parameter )
+					java
+				}
+			end java
+
+			o_result = c_mutable_list.make_immutable
+		end
+	end
+
+	creator create kind:in_all end
+	
+	%fa_parameter_storage_test
+
+end

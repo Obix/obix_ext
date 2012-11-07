@@ -1,0 +1,139 @@
+service test_commands
+
+	// parameter ids
+
+	attribute_list type:parameter_id
+
+		attribute include_path_parameter_id default: fa_parameter_id.create ( "include_path"~ ) end
+		attribute include_path_alternative_parameter_id default: fa_parameter_id.create ( "ip"~ ) end
+		
+		attribute exclude_path_parameter_id default: fa_parameter_id.create ( "exclude_path"~ ) end
+		attribute exclude_path_alternative_parameter_id default: fa_parameter_id.create ( "ep"~ ) end
+		
+		attribute display_infos_parameter_id default: fa_parameter_id.create ( "display_infos"~ ) end
+		attribute display_infos_alternative_parameter_id default: fa_parameter_id.create ( "di"~ ) end
+	
+	end
+	
+	// formal parameters
+
+	attribute include_path_formal_parameter type:regex_string_input_formal_parameter default: &
+		fa_regex_string_input_formal_parameter.create_with_default_value ( &
+			id = a_include_path_parameter_id &
+			alternative_id = a_include_path_alternative_parameter_id &
+			default_value = void &
+			void_allowed = yes &
+			validator = void &
+			edit_form_UI_item = fa_single_line_text_editor.create ( &
+				id = a_include_path_parameter_id &
+				void_allowed = yes ) &
+			converter = fa_string_to_regex_converter.create ) end
+
+	attribute exclude_path_formal_parameter type:regex_string_input_formal_parameter default: &
+		fa_regex_string_input_formal_parameter.create_with_default_value ( &
+			id = a_exclude_path_parameter_id &
+			alternative_id = a_exclude_path_alternative_parameter_id &
+			default_value = void &
+			void_allowed = yes &
+			validator = void &
+			edit_form_UI_item = fa_single_line_text_editor.create ( &
+				id = a_exclude_path_parameter_id &
+				void_allowed = yes ) &
+			converter = fa_string_to_regex_converter.create ) end
+			
+	attribute display_infos_formal_parameter type:yes_no_string_input_formal_parameter default: &
+		fa_yes_no_string_input_formal_parameter.create_with_default_value ( &
+			id = a_display_infos_parameter_id &
+			alternative_id = a_display_infos_alternative_parameter_id &
+			default_value = yes &
+			void_allowed = no &
+			validator = void &
+			edit_form_UI_item = fa_yes_no_editor.create ( &
+				id = a_display_infos_parameter_id &
+				default_value = yes &
+				void_allowed = no ) &
+			converter = se_yes_no_converter.default_string_to_yes_no_converter ) end
+			
+	attribute run_tests_formal_parameter_list type:!gt_formal_parameter_list<*>
+		default
+			script
+				const !gt_mutable_formal_parameter_list<*> formal_parameter_list = fa_mutable_any_type_formal_parameter_list.create
+				
+				c_formal_parameter_list.add ( a_include_path_formal_parameter )
+				c_formal_parameter_list.add ( a_exclude_path_formal_parameter )
+				c_formal_parameter_list.add ( a_display_infos_formal_parameter )
+
+				o_run_tests_formal_parameter_list = formal_parameter_list.make_immutable ( validator = void )
+			end
+		end
+	end
+	
+	command run_project_tests_from_command_line
+		in command_line_arguments type:indexed_string_list voidable:yes end
+		in project_start_library_id_path type:library_id_path end
+		%system_error_handler_input_argument
+		
+		out success type:yes_no end
+		
+		script
+			///
+			var !gt_parameter_list<*> parameter_list
+			var system_error error
+			se_parameter_utilities.create_typed_parameters_from_command_line ( &
+				command_line_arguments = i_command_line_arguments &
+				formal_parameter_list = a_run_tests_formal_parameter_list &
+				error_handler = i_error_handler ) &
+				( v_parameter_list = result &
+				v_error = error )
+			if v_error #r void then
+				o_success = no
+				exit script
+			end
+				
+			const regex include_path_regex = v_parameter_list.require_value ( a_include_path_parameter_id ) type_check:no
+			const regex exclude_path_regex = v_parameter_list.require_value ( a_exclude_path_parameter_id ) type_check:no
+			const yes_no display_infos = v_parameter_list.require_value ( a_display_infos_parameter_id ) type_check:no
+			end ///
+
+			var string argument_1
+			var string argument_2
+			var string argument_3
+			if i_command_line_arguments #r void then
+				const zero_positive32 argument_count = i_command_line_arguments.item_count
+				if c_argument_count >= 1 then
+					v_argument_1 = i_command_line_arguments.item_at_index(1)
+				end if
+				if c_argument_count >= 2 then
+					v_argument_2 = i_command_line_arguments.item_at_index(2)
+				end if
+				if c_argument_count >= 3 then
+					v_argument_3 = i_command_line_arguments.item_at_index(3)
+				end if
+			end if
+			
+			const regex include_path_regex = &
+				iif v_argument_1 =r void or v_argument_1 =v se_any_type.void_object_as_string &
+				then void &
+				else fa_regex.create ( v_argument_1.value ) end if
+
+			const regex exclude_path_regex = &
+				iif v_argument_2 =r void or v_argument_2 =v se_any_type.void_object_as_string &
+				then void &
+				else fa_regex.create ( v_argument_2.value ) end if
+
+			const yes_no display_infos = iif v_argument_3 =r void then yes else v_argument_3.to_string =v yes.to_string end if
+
+			const test_context test_context = fa_test_context.create ( &
+				include_path_regex = c_include_path_regex &
+				exclude_path_regex = c_exclude_path_regex &
+				display_info_messages = c_display_infos )
+		
+			o_success = se_testing.run_project_tests ( &
+				test_context = c_test_context &
+				project_start_library_id_path = i_project_start_library_id_path &
+				error_handler = i_error_handler )
+		end
+	end
+
+end
+	

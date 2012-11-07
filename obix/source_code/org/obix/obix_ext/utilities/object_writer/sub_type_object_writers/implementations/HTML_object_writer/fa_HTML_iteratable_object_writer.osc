@@ -1,0 +1,86 @@
+factory HTML_iteratable_object_writer type:iteratable_object_writer
+
+	attribute iteratable_object_traverser type:iteratable_object_traverser private:yes end
+
+	command write_iteratable
+		script
+			const iteratable_object_traverser_event_handler event_handler = fa_HTML_writer_iteratable_object_traverser_event_handler.create ( &
+				any_type_object_writer = a_any_type_object_writer &
+				writer = i_writer )
+			a_iteratable_object_traverser.traverse_iteratable_object ( &
+				iteratable = i_iteratable &
+				event_handler = c_event_handler &
+				item_to_field_list_converter = i_item_to_field_list_converter &
+				config = iif i_config #r void then i_config else a_default_config end if )
+		end
+	end
+	
+	creator create kind:in_all
+		script
+			o_result.any_type_object_writer = i_any_type_object_writer
+			o_result.default_config = i_default_config
+			
+			o_result.iteratable_object_traverser = fa_iteratable_object_traverser.create ( i_default_config )
+		end
+	end
+
+///	
+	test
+		script
+			const memory_string_writer writer = fa_memory_string_writer.create
+			const iteratable_object_writer to = co_create ( any_type_object_writer = fa_HTML_object_writer.create )
+			
+			const !mutable_indexed_list<test_object> list1 = !mutable_indexed_list_factory<test_object>.create
+			const test_object test_object1 = fa_test_object.create ( &
+				string_attribute = "joy" &
+				positive32_attribute = 123 &
+				yes_no_attribute = yes &
+				character_attribute = 'x' &
+				object_attribute = void &
+				list_attribute = void )
+			c_list1.append ( c_test_object1 )
+			to.write_iteratable ( &
+				iteratable= c_list1 &
+				writer = c_writer )
+			verify c_writer.result compare =v '''<table border="1" cellspacing="0" cellpadding="2"><thead><tr><th>No.</th><th>string_attribute</th><th>positive32_attribute</th><th>yes_no_attribute</th><th>character_attribute</th><th>object_attribute</th><th>list_attribute</th></tr></thead><tbody><tr><th scope="row">1</th><td>joy</td><td>123</td><td>yes</td><td>x</td><td>#void#</td><td>#void#</td></tr></tbody></table>'''
+			
+			const !mutable_indexed_list<test_object> list2 = !mutable_indexed_list_factory<test_object>.create
+			c_list2.append ( c_test_object1 )
+			const test_object test_object2 = fa_test_object.create ( &
+				string_attribute = "sun sun" &
+				positive32_attribute = 100 &
+				yes_no_attribute = no &
+				character_attribute = ' ' &
+				object_attribute = c_test_object1 &
+				list_attribute = c_list1 )
+			c_list2.append ( c_test_object2 )
+			c_writer.reset
+			to.write_iteratable ( &
+				iteratable= c_list2 &
+				writer = c_writer )
+			verify c_writer.result compare =v '''<table border="1" cellspacing="0" cellpadding="2"><thead><tr><th>No.</th><th>string_attribute</th><th>positive32_attribute</th><th>yes_no_attribute</th><th>character_attribute</th><th>object_attribute</th><th>list_attribute</th></tr></thead><tbody><tr><th scope="row">1</th><td>joy</td><td>123</td><td>yes</td><td>x</td><td>#void#</td><td>#void#</td></tr><tr><th scope="row">2</th><td>sun&nbsp;sun</td><td>100</td><td>no</td><td>&nbsp;</td><td><table border="1" cellspacing="0" cellpadding="2"><tr><td align="right">string_attribute</td><td>joy</td></tr><tr><td align="right">positive32_attribute</td><td>123</td></tr><tr><td align="right">yes_no_attribute</td><td>yes</td></tr><tr><td align="right">character_attribute</td><td>x</td></tr><tr><td align="right">object_attribute</td><td>#void#</td></tr><tr><td align="right">list_attribute</td><td>#void#</td></tr></table></td><td><table border="1" cellspacing="0" cellpadding="2"><thead><tr><th>No.</th><th>string_attribute</th><th>positive32_attribute</th><th>yes_no_attribute</th><th>character_attribute</th><th>object_attribute</th><th>list_attribute</th></tr></thead><tbody><tr><th scope="row">1</th><td>joy</td><td>123</td><td>yes</td><td>x</td><td>#void#</td><td>#void#</td></tr></tbody></table></td></tr></tbody></table>'''
+			
+			c_writer.reset
+			to.write_iteratable ( &
+				iteratable= c_list1 &
+				writer = c_writer &
+				information_level = ty_object_information_level.yes_no )
+			verify c_writer.result compare =v "yes"
+			
+			c_writer.reset
+			to.write_iteratable ( &
+				iteratable= c_list1 &
+				writer = c_writer &
+				information_level = ty_object_information_level.none )
+			verify c_writer.result compare =v ""
+			
+			c_writer.reset
+			to.write_iteratable ( &
+				iteratable= c_list1 &
+				writer = c_writer &
+				information_level = ty_object_information_level.string )
+			verify c_writer.result compare =v "Mutable&nbsp;indexed&nbsp;list&nbsp;containing&nbsp;1&nbsp;item(s)."
+		end
+	end test
+end ///
+end

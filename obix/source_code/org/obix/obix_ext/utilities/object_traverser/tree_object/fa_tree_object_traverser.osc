@@ -1,0 +1,175 @@
+factory tree_object_traverser type:tree_object_traverser
+
+	command traverse_tree_object
+		script
+			i_event_handler.on_tree_start ( &
+				tree = i_tree &
+				title_object = i_tree.to_string )
+				
+			co_traverse_branch_node ( &
+				branch_node = i_tree &
+				node_index = 1 &
+				is_last_child_node = yes &
+				is_root_node = yes &
+				event_handler = i_event_handler &
+				config = iif i_config #r void then i_config else a_default_config end if )
+
+			i_event_handler.on_tree_end
+		end
+	end
+	
+	command_list private:yes
+
+		command traverse_branch_node
+			in branch_node type:!simple_tree_node<*> end // voidable:yes end
+			in node_index type:positive32 end
+			in is_last_child_node type:yes_no end
+			in is_root_node type:yes_no default:no end
+			in event_handler type:tree_object_traverser_event_handler end
+			in config type:tree_object_traverser_config end
+			
+			script
+				///
+				if i_branch_node =r void then
+					exit script
+				end if
+				
+				const any_type branch_node_data = se_object_information_level.get_object_value ( &
+					original_object_value = i_branch_node &
+					information_level = i_config.branch_node_information_level )
+				end ///
+
+				const any_type branch_node_data = i_branch_node
+				
+				i_event_handler.on_tree_node_start ( &
+					tree_node = c_branch_node_data &
+					node_index = i_node_index &
+					is_last_child_node = i_is_last_child_node &
+					is_root_node = i_is_root_node &
+					is_branch_node = yes &
+					is_leaf_node = no )
+					
+				i_event_handler.on_child_node_list_start ( &
+					parent_tree_node = i_branch_node )
+					
+				if i_config.traverse_branch_nodes_before_leaf_nodes then
+					const yes_no has_more_nodes = i_branch_node.leaf_node_iterator.has_next
+					co_traverse_branch_child_nodes ( &
+						parent_node = i_branch_node &
+						event_handler = i_event_handler &
+						has_more_nodes = c_has_more_nodes &
+						config = i_config )
+					co_traverse_leaf_child_nodes ( &
+						parent_node = i_branch_node &
+						event_handler = i_event_handler &
+						has_more_nodes = no &
+						config = i_config )
+				else
+					const yes_no has_more_nodes = i_branch_node.branch_node_iterator.has_next
+					co_traverse_leaf_child_nodes ( &
+						parent_node = i_branch_node &
+						event_handler = i_event_handler &
+						has_more_nodes = c_has_more_nodes &
+						config = i_config )
+					co_traverse_branch_child_nodes ( &
+						parent_node = i_branch_node &
+						event_handler = i_event_handler &
+						has_more_nodes = no &
+						config = i_config )
+				end if
+						
+				i_event_handler.on_child_node_list_end ( &
+					parent_tree_node = i_branch_node &
+					is_last_child_node = i_is_last_child_node )
+
+				i_event_handler.on_tree_node_end ( &
+					tree_node = c_branch_node_data &
+					node_index = i_node_index &
+					is_last_child_node = i_is_last_child_node &
+					is_root_node = i_is_root_node &
+					is_branch_node = yes &
+					is_leaf_node = no )
+			end
+		end
+		
+		command traverse_branch_child_nodes
+			in parent_node type:!simple_tree_node<*> end
+			in event_handler type:tree_object_traverser_event_handler end
+			in has_more_nodes type:yes_no end
+			in config type:tree_object_traverser_config end
+
+			script
+				const !iterator<!simple_tree_node<*>> iterator = i_parent_node.branch_node_iterator
+				if c_iterator =r void then
+					exit script
+				end if
+
+				repeat while c_iterator.has_next counter:node_index
+					const !simple_tree_node<*> branch_node = c_iterator.next
+					
+					const yes_no is_last_node = not i_has_more_nodes and not c_iterator.has_next
+					
+					co_traverse_branch_node ( &
+						branch_node = c_branch_node &
+						node_index = c_node_index &
+						is_last_child_node = c_is_last_node &
+						is_root_node = no &
+						event_handler = i_event_handler &
+						config = i_config )
+				end repeat
+			end
+		end
+		
+		command traverse_leaf_child_nodes
+			in parent_node type:!simple_tree_node<*> end
+			in event_handler type:tree_object_traverser_event_handler end
+			in has_more_nodes type:yes_no end
+			in config type:tree_object_traverser_config end
+
+			script
+				if not i_config.traverse_leaf_nodes then
+					exit script
+				end if
+
+				const !iterator<any_type> iterator = i_parent_node.leaf_node_iterator
+				if c_iterator =r void then
+					exit script
+				end if
+
+				repeat while c_iterator.has_next counter:node_index
+
+					///
+					const any_type leaf_node_data = se_object_information_level.get_object_value ( &
+						original_object_value = c_iterator.next &
+						information_level = i_config.leaf_node_information_level )
+					end ///
+					
+					const any_type leaf_node_data = c_iterator.next
+
+					const yes_no is_last_node = not i_has_more_nodes and not c_iterator.has_next
+					
+					i_event_handler.on_tree_node_start ( &
+						tree_node = c_leaf_node_data &
+						node_index = c_node_index &
+						is_last_child_node = c_is_last_node &
+						is_root_node = no &
+						is_branch_node = no &
+						is_leaf_node = yes )
+
+					i_event_handler.on_tree_node_end ( &
+						tree_node = c_leaf_node_data &
+						node_index = c_node_index &
+						is_last_child_node = c_is_last_node &
+						is_root_node = no &
+						is_branch_node = no &
+						is_leaf_node = yes )
+				end repeat
+			end
+		end
+		
+	end command_list
+		
+
+	creator create kind:in_all end
+	
+end

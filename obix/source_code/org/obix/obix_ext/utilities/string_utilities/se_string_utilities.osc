@@ -1,0 +1,79 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service string_utilities
+
+	command remove_common_leading_indent
+		// string is a string which can contain many lines, separated by se_string_constants.current_OS_new_line
+		// the indent which is removed is the indent of the first line of the string
+		// this indent is removed in all subsequent lines
+		in string type:string end
+		
+		out result type:string end
+		
+		script
+			// define leading indent of first line
+			var mutable_string first_line_leading_indent = fa_mutable_string.create
+			repeat for each character character in i_string
+				if c_character.co_is_whitespace then
+					v_first_line_leading_indent.co_append_character ( c_character )
+				else
+					exit repeat
+				end if
+			end repeat
+			
+			if v_first_line_leading_indent.is_empty then
+				o_result = i_string
+				exit script
+			end if
+			
+			// remove indent of first line
+			var string indent = v_first_line_leading_indent.to_string
+			if i_string.item_count > v_indent.item_count then
+				o_result = i_string.co_extract_from ( v_indent.item_count + 1 )
+			else
+				o_result = se_string_constants.empty_string
+				exit script
+			end if
+
+			// remove indent of subsequent lines
+			var non_empty_string to_replace = se_string_constants.current_OS_new_line & v_indent
+			o_result = o_result.co_replace_all ( &
+				to_replace = v_to_replace &
+				replace_by = se_string_constants.current_OS_new_line )
+		end
+	end
+
+	command quantity_noun
+		in quantity type:zero_positive32 end
+		in noun type:simple_string end
+		in plural_noun type:simple_string voidable:yes default:void end
+		in uppercase_no type:yes_no default:no end
+		
+		out result type:string end
+		
+		script
+			const string plural = &
+				iif i_plural_noun #r void &
+				then i_plural_noun.to_string &
+				else i_noun.to_string & "s" end if
+
+			if i_quantity > 1 then
+				o_result = """{{i_quantity.to_string}} {{c_plural}}"""
+			else if i_quantity =v 1 then
+				o_result = """1 {{i_noun}}"""
+			else
+				if i_uppercase_no then
+					o_result = """No {{c_plural}}"""
+				else
+					o_result = """no {{c_plural}}"""
+				end if
+			end if
+		end
+	end
+
+end service

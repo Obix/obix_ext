@@ -1,0 +1,17 @@
+generic type object_to_field_list_converter
+
+	param object_type end
+	
+	type
+	
+		attribute field_description_map type:object_field_description_map end
+	
+		command convert
+			in object type:{object_type} voidable:yes end
+			
+			out result type:indexed_any_type_list check: i_result.item_count =v i_object_.field_description_map.item_count end
+		end
+		
+	end
+	
+end

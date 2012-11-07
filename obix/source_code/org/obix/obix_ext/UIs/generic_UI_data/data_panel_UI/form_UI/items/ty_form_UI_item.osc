@@ -1,0 +1,13 @@
+type form_UI_item
+
+	inherit generic_UI end
+	
+	attribute a_id type:simple_non_empty_string end
+	attribute label type:simple_string voidable:yes default:void end
+	attribute tip type:simple_string voidable:yes default:void end
+	attribute note type:simple_string voidable:yes default:void end
+	attribute get_detail_object_action type:UI_action voidable:yes default:void end
+	attribute include_in_request type:yes_no end
+
+end	
+	

@@ -1,0 +1,9 @@
+type multi_line_text_form_item
+
+	inherit form_UI_item end
+	
+	attribute width_in_characters type:positive32 voidable:yes default:void end
+	attribute height_in_lines type:positive32 voidable:yes default:void end
+
+end	
+	

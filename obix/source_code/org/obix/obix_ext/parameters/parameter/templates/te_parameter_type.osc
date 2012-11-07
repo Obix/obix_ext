@@ -1,0 +1,11 @@
+template parameter_type
+
+	param parameter_value_type end
+
+	type {parameter_value_type}_parameter
+
+		!gt_parameter < {parameter_value_type} >
+
+	end
+	
+end

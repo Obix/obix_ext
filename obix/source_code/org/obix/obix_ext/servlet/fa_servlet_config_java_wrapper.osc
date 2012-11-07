@@ -1,0 +1,68 @@
+factory servlet_config_java_wrapper type:servlet_config
+
+	java_header
+		import javax.servlet.*;
+
+		import org.obix.obix_ext.servlet.context.*;
+		import org.obix.obix_ext.servlet.message_handler.*;
+	end java_header
+
+	java
+        ServletConfig a_java_value;
+		in_servlet_container_context a_servlet_container_context;
+		in_servlet_message_handler a_message_handler;
+        
+        public fa_servlet_config_java_wrapper ( ServletConfig i_java_value, in_servlet_container_context i_servlet_container_context, in_servlet_message_handler i_message_handler ) {
+        	a_java_value = i_java_value;
+			a_servlet_container_context = i_servlet_container_context;
+			a_message_handler = i_message_handler;
+        }
+	end java
+
+	%te_get_string_attribute_for_java_wrapper < attribute_id: "servlet_name"; java_getter: "getServletName()" >
+
+	attribute servlet_init_parameters
+		get
+			script
+				o_servlet_init_parameters = fa_string_parameter_list.co_create_empty
+				// TD
+			end
+		end
+		set
+			script
+				// do nothing
+			end
+		end
+	end
+
+	attribute message_handler
+		get
+			script
+				java
+					o_message_handler = a_message_handler;
+				end java
+			end
+		end
+		set
+			script
+				// do nothing
+			end
+		end
+	end
+
+	attribute container_context
+		get
+			script
+				java
+					o_container_context = a_servlet_container_context;
+				end java
+			end
+		end
+		set
+			script
+				// do nothing
+			end
+		end
+	end
+
+end

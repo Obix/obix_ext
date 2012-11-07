@@ -1,0 +1,10 @@
+type JPA_get_object_by_primary_key_error default_factory:yes
+
+	inherit JPA_error
+		attribute a_id default:"JPA_get_object_by_primary_key_error" end
+	end
+	
+	attribute a_type type:string end
+	attribute primary_key type:zero_positive32 end
+
+end

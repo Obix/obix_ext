@@ -1,0 +1,7 @@
+type mutable_string_string_writer
+
+	inherit simple_string_writer end
+
+	attribute mutable_string type:mutable_string end
+	
+end type

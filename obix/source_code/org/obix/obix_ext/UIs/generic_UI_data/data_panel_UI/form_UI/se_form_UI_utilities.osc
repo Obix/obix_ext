@@ -1,0 +1,45 @@
+service form_UI_utilities
+
+	command get_display_form_UI_for_object
+		in object type:any_type end
+		in form_title type:simple_string voidable:yes end
+		in form_action_list type:!indexed_list<UI_action> voidable:yes end
+		in include_readonly_attributes type:yes_no end
+	
+		out result type:display_form_UI end
+		
+		script
+			const display_form_UI_item_map item_map = se_form_UI_item_utilities.get_display_form_UI_item_map_for_object ( &
+				object = i_object &
+				include_readonly_attributes = i_include_readonly_attributes )
+				
+			o_result = fa_display_form_UI.create ( &
+				title = i_form_title &
+				action_list = i_form_action_list &
+				item_list = c_item_map )
+		end
+	end
+
+	command get_edit_form_UI_for_object
+		in object type:any_type end
+		in form_title type:simple_string voidable:yes end
+		in form_action_list type:!indexed_list<UI_action> voidable:yes end
+		in submit_action type:form_UI_action end
+		in include_readonly_attributes type:yes_no end
+	
+		out result type:edit_form_UI end
+		
+		script
+			const form_UI_item_map item_map = se_form_UI_item_utilities.get_edit_form_UI_item_map_for_object ( &
+				object = i_object &
+				include_readonly_attributes = i_include_readonly_attributes )
+
+			o_result = fa_edit_form_UI.create ( &
+				title = i_form_title &
+				action_list = i_form_action_list &
+				item_list = c_item_map &
+				submit_action = i_submit_action )
+		end
+	end
+
+end

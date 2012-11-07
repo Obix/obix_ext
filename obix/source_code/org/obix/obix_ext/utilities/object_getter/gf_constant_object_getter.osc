@@ -1,0 +1,27 @@
+generic factory constant_object_getter
+
+	param object_type end
+	
+	factory type:!gt_object_getter<{object_type}>
+	
+		attribute constant type:{object_type} voidable:yes private:yes end
+	
+		command get_object
+			script
+				o_result = a_constant
+			end
+		end
+		
+		creator create
+			in constant type:{object_type} voidable:yes end
+			
+			out result type:!gt_object_getter<{object_type}> end
+			
+			script
+				o_result.constant = i_constant
+			end
+		end
+
+	end
+	
+end

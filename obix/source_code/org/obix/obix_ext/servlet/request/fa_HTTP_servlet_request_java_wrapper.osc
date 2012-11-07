@@ -1,0 +1,200 @@
+factory HTTP_servlet_request_java_wrapper type:HTTP_servlet_request
+
+	java_header
+		import javax.servlet.*;
+		import javax.servlet.http.*;
+		import java.util.*;
+		import java.io.BufferedReader;
+		import java.lang.StringBuilder;
+	end java_header
+
+	java
+        HttpServletRequest a_java_value;
+        
+        public fa_HTTP_servlet_request_java_wrapper ( HttpServletRequest i_java_value ) {
+        	a_java_value = i_java_value;
+        }
+	end java
+
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "local_host_name"; java_getter: "getLocalName()" >
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "server_host_name"; java_getter: "getServerName()" >
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "remote_host_name"; java_getter: "getRemoteHost()" >
+
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "local_IP_address"; java_getter: "getLocalAddr()" >
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "remote_IP_address"; java_getter: "getRemoteAddr()" >
+
+	%te_get_zero_positive32_attribute_from_java_value < attribute_id: "local_port"; java_getter: "getLocalPort()" >
+	%te_get_zero_positive32_attribute_from_java_value < attribute_id: "server_port"; java_getter: "getServerPort()" >
+	%te_get_zero_positive32_attribute_from_java_value < attribute_id: "remote_port"; java_getter: "getRemotePort()" >
+
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "scheme"; java_getter: "getScheme()" >
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "protocol_used"; java_getter: "getProtocol()" >
+	%te_get_yes_no_attribute_from_java_value < attribute_id: "secure_connection_used"; java_getter: "isSecure()" >
+
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "content_type"; java_getter: "getContentType()" >
+	%te_get_zero_positive32_attribute_from_java_value < attribute_id: "content_length"; java_getter: "getContentLength()" >
+
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "character_encoding"; java_getter: "getCharacterEncoding()" >
+
+/// TD
+	attribute preferred_locale type:locale end
+	attribute acceptable_locales type:!indexed_list<locale> end
+end ///
+
+	// TD for better performance: could store list in private attribute to avoid creating the list each time the attribute is accessed
+	attribute URL_parameters
+		get
+			script
+				const mutable_string_parameter_list parameter_list = fa_mutable_string_parameter_list.co_create
+				var string_value id;
+				var string value;
+
+				java
+					Map map = a_java_value.getParameterMap();
+					Iterator iterator = map.keySet().iterator();
+					while (iterator.hasNext()) {
+						String key = (String) iterator.next();
+						String[] values = (String[]) map.get(key);
+
+						v_id = new fa_string_value(key);
+						v_value = new fa_string(values[0]);
+						end java
+						c_parameter_list.add ( fa_string_parameter.create ( &
+							id = fa_parameter_id.create ( v_id ) &
+							value = v_value ) )
+						java
+					}
+				end java
+
+				o_URL_parameters = c_parameter_list.make_immutable
+			end
+		end
+	end
+
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "HTTP_method"; java_getter: "getMethod()" >
+
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "URI"; java_getter: "getRequestURI()" >
+
+	attribute URL
+		get
+			script
+				o_URL = URL_without_query
+				if URL_query #r void then
+					o_URL = o_URL & "?" & URL_query
+				end if
+			end
+		end
+	end
+
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "URL_without_query"; java_getter: "getRequestURL().toString()" >
+
+	attribute URL_path
+		get
+			script
+				java
+					String result = a_java_value.getPathInfo();
+					if ( result == null ) {
+						o_URL_path = null;
+					} else {
+						o_URL_path = new fa_non_empty_string ( result );
+					}
+				end java
+			end
+		end
+	end
+
+	attribute URL_path_translated
+		get
+			script
+				java
+					String result = a_java_value.getPathTranslated();
+					if ( result == null ) {
+						o_URL_path_translated = null;
+					} else {
+						o_URL_path_translated = new fa_non_empty_string ( result );
+					}
+				end java
+			end
+		end
+	end
+
+	attribute URL_query
+		get
+			script
+				java
+					String result = a_java_value.getQueryString();
+					if ( result == null ) {
+						o_URL_query = null;
+					} else {
+						o_URL_query = new fa_non_empty_string ( result );
+					}
+				end java
+			end
+		end
+	end
+
+
+	%te_get_string_attribute_from_java_value < attribute_id: "servlet_path"; java_getter: "getServletPath()" >
+	%te_get_string_attribute_from_java_value < attribute_id: "context_path"; java_getter: "getContextPath()" >
+
+	%te_get_yes_no_attribute_from_java_value < attribute_id: "is_session_id_from_cookie"; java_getter: "isRequestedSessionIdFromCookie()" >
+	%te_get_yes_no_attribute_from_java_value < attribute_id: "is_session_id_from_URL"; java_getter: "isRequestedSessionIdFromURL()" >
+
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "authentication_type"; java_getter: "getAuthType()" >
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "authenticated_user_name"; java_getter: "getUserPrincipal().getName()" >
+	%te_get_non_empty_string_attribute_from_java_value < attribute_id: "remote_login_user_id"; java_getter: "getRemoteUser()" >
+
+/// TD
+	attribute HTTP_header type:string_and_string_list_parameters voidable:yes end
+	attribute session type:HTTP_session end // getSession()
+	attribute cookie_list type:!indexed_list<cookie> voidable:yes end // getCookies()
+end ///
+
+	command get_URL_parameter_value
+		script
+			java
+				String result = a_java_value.getParameter(i_parameter_name.getValue().java_value());
+				if (result != null) {
+					o_result = new fa_string ( result );
+				}
+			end java
+		end
+	end
+
+	command get_body_content_as_string
+		script
+			java
+				BufferedReader reader = a_java_value.getReader();
+				char[] buffer = new char[8092]; // 8 kB char buffer
+				StringBuilder string_builder = new StringBuilder();
+				int count;
+				while ( (count = reader.read ( buffer, 0, buffer.length) ) != -1 ) {
+					string_builder.append ( buffer, 0 , count );
+				}
+				if ( string_builder.length() > 0 ) {
+					o_result = new fa_string ( string_builder.toString() );
+				}
+			end java
+		end
+	end
+
+	command get_header_value
+		script
+			java
+				String result = a_java_value.getHeader(i_header_name.getValue().java_value());
+				if (result != null) {
+					o_result = new fa_string ( result );
+				}
+			end java
+		end
+	end
+
+	command is_authenticated_user_included_in_role
+		script
+			java
+				o_result = new fa_yes_no ( a_java_value.isUserInRole(i_role.getValue().java_value()) );
+			end java
+		end
+	end
+
+end

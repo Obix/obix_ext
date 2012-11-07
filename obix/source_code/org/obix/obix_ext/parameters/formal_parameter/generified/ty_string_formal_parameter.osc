@@ -1,0 +1,7 @@
+type string_formal_parameter
+
+	inherit !gt_formal_parameter<string> end
+	
+	attribute config type:string_to_object_converter_config default:se_string_to_object_converter_config.empty_string_allowed end
+
+end

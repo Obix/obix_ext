@@ -1,0 +1,107 @@
+generic factory parameter_list
+
+	param parameter_value_type end
+	
+	factory type:!gt_parameter_list<{parameter_value_type}>
+	
+		attribute map type:!map < &
+			key_type:parameter_id &
+			item_type:!gt_parameter<{parameter_value_type}> > &
+			private:yes end
+
+		attribute item_count
+			get
+				script
+					o_item_count = a_map.item_count
+				end
+			end
+		end
+
+		attribute is_empty
+			get
+				script
+					o_is_empty = a_map.is_empty
+				end
+			end
+		end
+
+		command item_iterator
+			script
+				o_result = a_map.item_iterator
+			end
+		end
+
+		command contains_parameter
+			script
+				o_result = a_map.contains_key ( i_id )
+			end
+		end
+
+		command get_parameter_if_contained
+			script
+				o_result = a_map.get_item_if_contained ( i_id )
+			end
+		end
+
+		command require_parameter
+			script
+				o_result = a_map.require_item ( i_id )
+			end
+		end
+		
+		command require_value
+			script
+				o_result = a_map.require_item ( i_id ).value
+			end
+		end
+		
+		command value_list
+			script
+				const !mutable_indexed_list<{parameter_value_type}> mutable_list = !mutable_indexed_list_factory<{parameter_value_type}>.create
+				repeat for each !gt_parameter<{parameter_value_type}> parameter in a_map
+					c_mutable_list.append ( c_parameter.value )
+				end
+				o_result = c_mutable_list.make_immutable
+			end
+		end
+
+
+		creator create
+			in map type:!map < &
+				key_type:parameter_id &
+				item_type:!gt_parameter<{parameter_value_type}> > end
+				
+			out result type:!gt_parameter_list<{parameter_value_type}> end
+			
+			script
+				o_result.a_map = i_map
+			end
+		end
+
+		creator create_empty
+			out result type:!gt_parameter_list<{parameter_value_type}> end
+			
+			script
+				o_result = co_create ( !map_factory < &
+					key_type:parameter_id &
+					item_type:!gt_parameter<{parameter_value_type}> >.create_empty )
+			end
+		end
+
+		creator create_singleton
+			in parameter type:!gt_parameter<{parameter_value_type}> end
+
+			out result type:!gt_parameter_list<{parameter_value_type}> end
+			
+			script
+				o_result = co_create ( !map_factory < &
+					key_type:parameter_id &
+					item_type:!gt_parameter<{parameter_value_type}> >.create_singleton ( &
+						key = i_parameter.id &
+						item = i_parameter ) )
+			end
+		end
+
+	end
+		
+end

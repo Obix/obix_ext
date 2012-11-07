@@ -1,0 +1,8 @@
+type JSON_decimal
+
+	inherit JSON_number end
+	// TD inherit JSON_number; simple_real32 end
+
+	attribute value type:float64_value end
+
+end

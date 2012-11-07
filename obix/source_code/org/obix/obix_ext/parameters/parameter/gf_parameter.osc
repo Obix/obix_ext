@@ -1,0 +1,22 @@
+generic factory parameter
+
+	param parameter_value_type end
+	
+	factory type:!gt_parameter<{parameter_value_type}>
+	
+		command to_string
+			script
+				const string parameter_value = &
+					iif a_value #r void &
+					then a_value.to_string &
+					else se_any_type.void_object_as_string end if
+				
+				o_result = """{{a_id}}: {{c_parameter_value}}"""
+			end
+		end
+		
+		creator create kind:in_all end
+
+	end
+
+end

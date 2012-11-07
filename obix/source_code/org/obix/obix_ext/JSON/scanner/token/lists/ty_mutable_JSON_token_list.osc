@@ -1,0 +1,5 @@
+type mutable_JSON_token_list
+
+	!mutable_indexed_list<JSON_token>
+	
+end

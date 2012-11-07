@@ -1,0 +1,11 @@
+factory local_date_time_object_getter type:local_date_time_object_getter
+
+	command get_object
+		script
+			o_result = se_date_time.current_local_date_time
+		end
+	end
+	
+	creator create kind:in_all end
+	
+end

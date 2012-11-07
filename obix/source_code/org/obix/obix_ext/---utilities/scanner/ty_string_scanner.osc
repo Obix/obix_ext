@@ -1,0 +1,34 @@
+type string_scanner
+	
+	inherit closeable end
+	
+	attribute token_delimiter type:regex default:se_regex_constants.whitespace_regex end 
+
+	command has_next_token
+		out result type:yes_no end
+	end
+
+	command scan_token
+		out result type:string voidable:yes end
+	end
+
+	command scan_regex
+		in regex type:regex end
+		
+		out result type:string voidable:yes end
+	end
+
+	command scan_regex_string
+		in regex type:string end
+		
+		out result type:string voidable:yes end
+	end
+
+	command scan_string_literal
+		in remove_embedding_quotes type:yes_no end
+		in replace_escaped_quotes type:yes_no end
+
+		out result type:string voidable:yes end
+	end
+
+end

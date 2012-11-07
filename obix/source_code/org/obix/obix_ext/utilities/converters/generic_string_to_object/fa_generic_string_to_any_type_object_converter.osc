@@ -1,0 +1,87 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory generic_string_to_any_type_object_converter type:generic_string_to_any_type_object_converter
+
+	attribute converter type:!string_to_object_converter<*> private:yes end
+	
+	command convert
+		script
+			a_converter.convert ( &
+				input = i_input &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error = error )
+		end
+	end
+	
+	
+	creator create
+		in config type:string_to_object_converter_config default:se_string_to_object_converter_config.default_value end
+		in i_type type:type end
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output < generic_string_to_any_type_object_converter >
+
+		script
+			o_result.config = i_config
+			o_result.type = i_type
+			
+			var !string_to_object_converter<*> converter
+
+			if i_type.enumerated_list #r void then
+				v_converter = fa_generic_string_to_enumerated_object_converter.create ( &
+					config = i_config &
+					enumerated_type = i_type )
+
+			else if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.scalar ) then
+
+				if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.simple_string ) then
+					fa_generic_string_to_simple_string_object_converter.create ( &
+						config = i_config &
+						type = i_type &
+						error_handler = i_error_handler ) &
+						( v_converter = result &
+						o_error = error )
+
+				else if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.simple_signed_integer32 ) then
+					fa_generic_string_to_simple_signed_integer32_object_converter.create ( &
+						config = i_config &
+						type = i_type &
+						error_handler = i_error_handler ) &
+						( v_converter = result &
+						o_error = error )
+						
+				else if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.yes_no ) then
+					v_converter = fa_string_to_yes_no_converter.create ( i_config )
+					// v_converter = se_yes_no_converter.default_string_to_yes_no_converter ( i_config )
+
+				else if i_type.is_compatible_to.result ( target_type_id_path = se_common_type_id_paths.character ) then
+					v_converter = fa_string_to_character_converter.create ( i_config )
+					// v_converter = se_character_converter.default_string_to_character_converter ( i_config )
+					
+				end if
+			end if
+			
+			if v_converter =r void then
+				fa_generic_string_to_non_scalar_object_converter.create ( &
+					config = i_config &
+					type = i_type &
+					error_handler = i_error_handler ) &
+					( v_converter = result &
+					o_error = error )
+			end if
+			
+			if o_error =r void then
+				o_result.converter = v_converter
+			else
+				o_result = void
+			end if
+		end
+	end
+
+end

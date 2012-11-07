@@ -1,0 +1,40 @@
+service formal_parameter_list_utilities
+
+	command create_edit_form_UI_from_formal_parameter_list
+		in formal_parameter_list type:!gt_formal_parameter_list<*> voidable:yes end
+		in form_title type:simple_non_empty_string voidable:yes end
+		in submit_label type:simple_non_empty_string end
+		in submit_command_path type:simple_non_empty_string end
+		in result_div type:simple_non_empty_string end
+		
+		out result type:edit_form_UI end
+		
+		script
+			const mutable_form_UI_item_map form_item_list = fa_mutable_form_UI_item_map.create
+
+			if i_formal_parameter_list #r void then
+				repeat for each !gt_formal_parameter<*> formal_parameter in i_formal_parameter_list
+					if c_formal_parameter.edit_form_UI_item #r void then
+						form_item_list.add ( &
+							key = c_formal_parameter.id &
+							item = c_formal_parameter.edit_form_UI_item )
+					end if
+				end repeat
+			end if
+			
+			const form_UI_action submit_action = fa_form_UI_action.create_for_button ( &
+				label = i_submit_label &
+				command_path = i_submit_command_path &
+				constant_parameter_list = void &
+				ask_confirmation = no &
+				result_div = i_result_div )
+			
+			o_result = fa_edit_form_UI.create ( &
+				title = i_form_title &
+				action_list = void &
+				item_list = c_form_item_list.make_immutable &
+				submit_action = c_submit_action )
+		end
+	end
+	
+end

@@ -1,0 +1,183 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service text_file_replacer
+
+	/// TD
+	all commands in se_string_replacer should also have corresponding commands in this service for
+		- a single file
+		- a list of files
+		- a directory
+		- a list of files defined by file_list_in_file
+	(see se_string_finder and se_text_file_finder)
+	end ///
+
+	command replace_all_substring_in_file
+		%existing_file_input_argument
+		%supported_character_set_input_argument
+		in to_replace type:simple_non_empty_string end
+		in replace_by type:simple_string end
+		%system_error_handler_input_argument
+		
+		%file_error_output_argument
+		
+		script
+			o_error = co_find_and_or_replace_all_regex_in_file.error ( &
+				file = i_file &
+				character_set = i_character_set &
+				regex = se_regex_utilities.literal_string_to_regex ( i_to_replace ) &
+				replace_by = i_replace_by &
+				return_find_result = no &
+				error_handler = i_error_handler )
+		end
+	end
+
+	command replace_all_regex_in_file
+		%existing_file_input_argument
+		%supported_character_set_input_argument
+		in to_replace_regex type:regex end
+		in replace_by type:simple_string end
+		%system_error_handler_input_argument
+		
+		%file_error_output_argument
+		
+		script
+			o_error = co_find_and_or_replace_all_regex_in_file.error ( &
+				file = i_file &
+				character_set = i_character_set &
+				regex = i_to_replace_regex &
+				replace_by = i_replace_by &
+				return_find_result = no &
+				error_handler = i_error_handler )
+		end
+	end
+
+	command find_and_replace_all_regex_in_file
+		%existing_file_input_argument
+		%supported_character_set_input_argument
+		in to_replace_regex type:regex end
+		in replace_by type:simple_string end
+		%system_error_handler_input_argument
+		
+		%result_or_error_void_output < &
+			result_type:string_find_result_list &
+			error_type:file_error >
+		
+		script
+			co_find_and_or_replace_all_regex_in_file ( &
+				file = i_file &
+				character_set = i_character_set &
+				regex = i_to_replace_regex &
+				replace_by = i_replace_by &
+				return_find_result = yes &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error = error )
+		end
+	end
+	
+	command replace_all_Windows_new_line_with_Unix_new_line_in_file
+		%existing_file_input_argument
+		%supported_character_set_input_argument
+		%system_error_handler_input_argument
+		
+		%file_error_output_argument
+		
+		script
+			o_error = co_find_and_or_replace_all_regex_in_file.error ( &
+				file = i_file &
+				character_set = i_character_set &
+				regex = se_regex_constants.Windows_new_line_regex &
+				replace_by = se_string_constants.Unix_new_line &
+				return_find_result = no &
+				error_handler = i_error_handler )
+		end
+	end
+
+	command replace_all_Unix_new_line_with_Windows_new_line_in_file
+		%existing_file_input_argument
+		%supported_character_set_input_argument
+		%system_error_handler_input_argument
+		
+		%file_error_output_argument
+		
+		script
+			// TD3 should read file only once
+
+			// first replace any CRLF with LF
+			o_error = co_replace_all_Windows_new_line_with_Unix_new_line_in_file ( &
+				file = i_file &
+				character_set = i_character_set &
+				error_handler = i_error_handler )
+
+			// now replace any LF with CRLF
+			if o_error =r void then
+				o_error = co_find_and_or_replace_all_regex_in_file.error ( &
+					file = i_file &
+					character_set = i_character_set &
+					regex = se_regex_constants.Unix_new_line_regex &
+					replace_by = se_string_constants.Windows_new_line &
+					return_find_result = no &
+					error_handler = i_error_handler )
+					// regex = se_regex_constants.strict_Unix_new_line_regex &
+			end if
+		end
+	end
+
+	command find_and_or_replace_all_regex_in_file private:yes
+		in file type:file end
+		%supported_character_set_input_argument
+		in regex type:regex end
+		in replace_by type:simple_string voidable:yes end
+		in return_find_result type:yes_no end
+		%system_error_handler_input_argument
+		
+		%result_or_error_void_output < &
+			result_type:string_find_result_list &
+			error_type:file_error >
+		
+		script
+			var string file_content
+			se_text_file_IO.restore_string_from_file ( &
+				file = i_file &
+				character_set = i_character_set ) &
+				( v_file_content = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+			
+			if i_return_find_result then
+				o_result = se_string_finder.find_all_regex ( &
+					string = v_file_content &
+					regex = i_regex )
+			end if
+			
+			if i_replace_by =r void then
+				exit script
+			end if
+			
+			// if no regex was found then no replace needs to be done
+			if i_return_find_result and o_result =r void then
+				exit script
+			end if
+			
+			v_file_content = v_file_content.replace_all_regex ( &
+				to_replace_regex = i_regex &
+				replace_by = i_replace_by )
+
+			o_error = se_text_file_IO.store_string_to_existing_file ( &
+				string = v_file_content &
+				file = i_file &
+				character_set = i_character_set )
+			if o_error #r void then
+				o_result = void
+			end if
+		end
+	end
+
+end service

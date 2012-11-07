@@ -1,0 +1,111 @@
+factory string_formal_parameter type:string_formal_parameter
+
+	command create_default_value_parameter
+		script
+			var any_type any_type_default_value
+			var system_error system_error
+			a_default_value_getter.get_object ( &
+				error_handler = i_error_handler ) &
+				( v_any_type_default_value = result &
+				v_system_error = error )
+			if v_system_error #r void then
+				o_error = fa_parameter_error.create ( &
+					description = """Default value for parameter '{{a_id}}' cannot be accessed. Reason:
+{{v_system_error.description}}""" &
+					resource = void &
+					data = void &
+					parameter_id = a_id &
+					parameter_value = void )
+				exit script
+			end if
+
+			const string default_value = v_any_type_default_value type_check:no
+			co_create_parameter ( &
+				value = c_default_value &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error = error )
+		end
+	end
+
+	command create_parameter
+		script
+			var string result_value = i_value
+
+			if i_value #r void then
+				if a_config.empty_string_is_void and i_value =v se_string_constants.empty_string then
+					v_result_value = void
+					
+				else if a_config.void_value_as_string #r void and i_value =v a_config.void_value_as_string then
+					v_result_value = void
+					
+				end if
+			end if
+			
+			// check if valid
+			
+			if v_result_value =r void and not a_void_allowed then
+				o_error = fa_parameter_error.create ( &
+					description = """Value of parameter '{{a_id}}' cannot be void.""" &
+					resource = void &
+					data = i_value &
+					parameter_id = a_id &
+					parameter_value = void )
+				i_error_handler.handle_system_error ( o_error )
+				exit script
+			end if
+			
+			if a_validator #r void then
+				var yes_no is_valid
+				var error validator_error
+				a_validator.is_valid ( &
+					object = v_result_value &
+					error_handler = i_error_handler ) &
+					( v_is_valid = result &
+					validator_error = error )
+				if validator_error #r void then
+					o_error = fa_parameter_error.create ( &
+						description = """'{{se_any_type.force_object_to_string ( i_value )}}' is invalid for parameter '{{a_id}}'. Reason:
+{{validator_error.description}}""" &
+						resource = void &
+						data = i_value &
+						parameter_id = a_id &
+						parameter_value = i_value )
+					exit script
+				end if
+			end if
+			
+			// create parameter
+			
+			o_result = !gf_parameter<string>.create ( &
+				id = a_id &
+				value = v_result_value )
+		end
+	end
+
+
+	creator create kind:in_all end
+	
+	creator create_with_default_value
+		in i_id type:parameter_id end
+		in alternative_id type:parameter_id voidable:yes default:void end
+		in default_value type:string voidable:yes end
+		in void_allowed type:yes_no end
+		in validator type:!validator<string> voidable:yes end
+		in edit_form_UI_item type:edit_form_UI_item voidable:yes end
+		in config type:string_to_object_converter_config default:se_string_to_object_converter_config.empty_string_allowed end
+		
+		out result type:string_formal_parameter end
+		
+		script
+			o_result.id = i_id
+			o_result.alternative_id = i_alternative_id
+			o_result.default_value_getter = !gf_constant_object_getter<string>.create ( i_default_value )
+			o_result.void_allowed = i_void_allowed
+			o_result.validator = i_validator
+			o_result.edit_form_UI_item = i_edit_form_UI_item
+			o_result.config = i_config
+		end
+	end
+	
+end

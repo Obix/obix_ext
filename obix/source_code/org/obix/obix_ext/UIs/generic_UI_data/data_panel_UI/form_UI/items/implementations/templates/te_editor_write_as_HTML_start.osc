@@ -1,0 +1,48 @@
+template editor_write_as_HTML_start
+
+			const string id_att_value = se_HTML_utilities.escape_HTML_code(a_id)
+			
+			const simple_string label_value = &
+				iif a_label #r void &
+				then a_label &
+				else se_generic_UI_utilities.convert_id_to_label ( a_id ) end if
+			
+			i_writer.write ( """<tr><td class="form_label"><label for="{{c_id_att_value}}">{{se_HTML_utilities.escape_HTML_code(c_label_value)}}</label></td><td class="required_flag">{{iif a_void_allowed then "" else "*" end if}}</td><td class="form_input_field">""" )
+			
+			const string id_att = """ id="{{c_id_att_value}}""""
+
+			const string name_att = """ name="{{c_id_att_value}}""""
+			
+			const any_type default_value = &
+				iif a_default_value_getter #r void &
+				then a_default_value_getter.get_object.result &
+				else a_default_value end if
+			
+			const string value_att = &
+				iif c_default_value #r void &
+				then """ value="{{se_HTML_utilities.escape_HTML_data_for_input_value ( c_default_value.to_string )}}"""" &
+				else "" end if
+
+			const string title_att = &
+				iif a_tip #r void &
+				then """ title="{{se_HTML_utilities.escape_HTML_data_for_input_value ( a_tip )}}"""" &
+				else "" end if
+				
+			const string tabindex_att = &
+				iif a_tab_index #r void &
+				then """ tabindex="{{a_tab_index.to_string}}"""" &
+				else "" end if
+				
+			const string accesskey_att = &
+				iif a_access_key #r void &
+				then """ accesskey="{{se_HTML_utilities.escape_HTML_code ( a_access_key )}}"""" &
+				else "" end if
+				
+			const string placeholder_att = &
+				iif a_placeholder_text #r void &
+				then """ placeholder="{{se_HTML_utilities.escape_HTML_data_for_input_value ( a_placeholder_text )}}"""" &
+				else "" end if
+				
+			const string class_att = """ class="form_input_field""""
+
+end

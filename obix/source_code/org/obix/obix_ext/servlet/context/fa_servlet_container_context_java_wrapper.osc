@@ -1,0 +1,92 @@
+factory servlet_container_context_java_wrapper type:servlet_container_context
+
+	java_header
+		import javax.servlet.*;
+	end java_header
+
+	java
+        ServletContext a_java_value;
+        
+        public fa_servlet_container_context_java_wrapper ( ServletContext i_java_value ) {
+        	a_java_value = i_java_value;
+        }
+	end java
+
+	%te_get_string_attribute_for_java_wrapper < attribute_id: "context_name"; java_getter: "getServletContextName()" >
+
+	%te_get_string_attribute_for_java_wrapper < attribute_id: "context_path"; java_getter: "getContextPath()" >
+	
+	attribute context_init_parameters
+		get
+			script
+				o_context_init_parameters = fa_string_parameter_list.co_create_empty
+				// TD
+			end
+		end
+		set
+			script
+				// do nothing
+			end
+		end
+	end
+	
+	%te_get_string_attribute_for_java_wrapper < attribute_id: "container_info"; java_getter: "getServerInfo()" >
+
+	attribute shared_servlet_parameters
+		get
+			script
+				// o_shared_servlet_parameters = fa_string_parameters_builder.co_create_empty.to_immutable
+				// TD
+			end
+		end
+		set
+			script
+				// do nothing
+			end
+		end
+	end
+
+
+	command get_file_MIME_type
+		script
+			java
+				o_MIME_type = new fa_string ( a_java_value.getMimeType(i_file_name.getValue().java_value()) );
+			end java
+		end
+	end
+
+	command get_absolute_file_or_directory_path
+		script
+			java
+				o_result = new fa_string ( a_java_value.getRealPath(i_relative_file_or_directory_path.getValue().java_value()) );
+			end java
+		end
+	end
+
+	command get_resource_URL
+		script
+			java
+				// TD
+				o_result = new fa_string ( a_java_value.getResource(i_relative_path.getValue().java_value()).toString() );
+			end java
+		end
+	end
+
+	command log_message
+		script
+			java
+				a_java_value.log(i_message.getValue().java_value());
+			end java
+		end
+	end
+
+	command log_error
+		script
+			java
+				// TD error
+				a_java_value.log(i_message.getValue().java_value(), null);
+			end java
+		end
+	end
+
+end

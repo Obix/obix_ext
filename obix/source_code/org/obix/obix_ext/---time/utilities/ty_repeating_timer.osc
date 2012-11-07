@@ -1,0 +1,30 @@
+type repeating_timer
+
+	attribute command_object type:command_object end
+
+	attribute delay_in_milliseconds type:positive32 end
+	attribute first_delay_in_milliseconds type:positive32 end
+
+	attribute combine_pending_ticks type:yes_no end
+
+	command start
+		in_check
+			script
+				check not i_object_.co_is_running
+			end
+		end
+	end
+
+	command cancel
+		in_check
+			script
+				check i_object_.co_is_running
+			end
+		end
+	end
+
+	command is_running
+		out result type:yes_no end
+	end
+
+end type

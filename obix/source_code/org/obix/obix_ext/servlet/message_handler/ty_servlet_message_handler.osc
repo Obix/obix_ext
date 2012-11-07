@@ -1,0 +1,19 @@
+type servlet_message_handler
+
+	inherit servlet_error_handler end
+
+	// attribute container_context type:servlet_container_context end
+
+	command info_message
+		in message type:string end
+	end
+
+	command warning_message
+		in message type:string end
+	end
+
+	command debug_message
+		in message type:string end
+	end
+
+end type

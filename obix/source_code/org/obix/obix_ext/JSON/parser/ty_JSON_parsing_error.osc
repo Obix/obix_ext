@@ -1,0 +1,7 @@
+type JSON_parsing_error default_factory:yes
+
+	inherit invalid_data_error
+		attribute a_id default:"JSON_parsing_error" end
+	end
+	
+end type

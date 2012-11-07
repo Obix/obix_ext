@@ -1,0 +1,169 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory generic_string_to_simple_string_object_converter type:generic_string_to_simple_string_object_converter
+
+	attribute_list private:yes
+	
+		attribute factory type:factory end
+		attribute creator type:factory_command end
+	
+	end
+
+	command convert
+		script
+			var system_error conversion_error
+			section convert
+				if i_input =r void then
+					if a_config.void_input_allowed then
+						o_result = void
+						exit script
+					else
+						o_result = void
+						v_conversion_error = fa_system_error.create ( description = "A void string input is not allowed." )
+						exit section
+					end if
+				end if
+
+				var any_type any_type_result
+				se_reflection.execute_create_creator_for_string_value_input ( &
+					factory = a_factory &
+					creator_id = creator.id &
+					string_value_input_argument = i_input.value &
+					error_handler = i_error_handler ) &
+					( v_any_type_result = result &
+					v_conversion_error = error )
+				if v_conversion_error =r void then
+					o_result = v_any_type_result type_check:no
+					exit script
+				end if
+
+				if i_input =v se_string_constants.empty_string then
+					if a_config.empty_string_is_void then
+						o_result = void
+						exit script
+					end if
+
+				else if a_config.void_value_as_string #r void and i_input =v a_config.void_value_as_string then
+					o_result = void
+					exit script
+
+				end if
+			end section
+			
+			o_error = fa_string_to_object_conversion_error.create ( &
+				i_id = "string_to_simple_string_type_conversion_error" &
+				description = """'{{se_any_type.force_object_to_string(i_input)}}' cannot be converted to an object of type '{{a_type.id.suffix}}'. Reason:
+{{v_conversion_error.description}}""" &
+				data = i_input &
+				type_of_result = a_type.id_path &
+				error_position = void )
+			i_error_handler.handle_system_error ( o_error )
+		end
+	end
+	
+	
+	creator create
+		in config type:string_to_object_converter_config default:se_string_to_object_converter_config.default_value end
+		in i_type type:type end
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output < generic_string_to_simple_string_object_converter >
+
+		script
+			o_result.config = i_config
+			o_result.type = i_type
+			
+			var factory factory
+			var factory_command creator
+			se_reflection.get_create_creator_for_type ( &
+				type = i_type &
+				error_handler = i_error_handler ) &
+				( v_factory = factory &
+				v_creator = creator &
+				o_error = error )
+			if o_error #r void then
+				o_result = void
+				exit script
+			end if
+			
+			o_result.factory = v_factory
+			o_result.creator = v_creator
+		end
+	end
+	
+	test
+		script
+			var generic_string_to_simple_string_object_converter converter = co_create.result ( &
+				type = se_reflection.library_repository.type_by_unprefixed_id_string ( "date" ) )
+
+			var simple_string result
+			var system_error error
+
+			// valid input
+			v_result = v_converter.convert.result ( input = "2012-07-23" )
+			verify v_result.value =v "2012-07-23"~
+			const date date_result = v_result type_check:no
+			verify c_date_result.value =v "2012-07-23"~
+
+			// invalid input
+			v_converter.convert ( input = "2012-02-30" ) &
+				( v_result = result &
+				v_error = error )
+			verify v_result =r void
+			verify v_error #r void
+			
+			// void input
+
+			v_converter.convert ( input = void ) &
+				( v_result = result &
+				v_error = error )
+			verify v_result =r void
+			verify v_error =r void
+
+			v_converter.convert ( input = "" ) &
+				( v_result = result &
+				v_error = error )
+			verify v_result =r void
+			verify v_error =r void
+
+			v_converter.convert ( input = se_any_type.void_object_as_string ) &
+				( v_result = result &
+				v_error = error )
+			verify v_result =r void
+			verify v_error =r void
+
+			const string_to_object_converter_config no_void_config = fa_string_to_object_converter_config.create ( &
+				empty_string_is_void = no &
+				void_value_as_string = void &
+				void_input_allowed = no )
+
+			v_converter = co_create.result ( &
+				config = c_no_void_config &
+				type = se_reflection.library_repository.type_by_unprefixed_id_string ( "date" ) )
+
+			v_converter.convert ( input = void ) &
+				( v_result = result &
+				v_error = error )
+			verify v_result =r void
+			verify v_error #r void
+
+			v_converter.convert ( input = "" ) &
+				( v_result = result &
+				v_error = error )
+			verify v_result =r void
+			verify v_error #r void
+
+			v_converter.convert ( input = se_any_type.void_object_as_string ) &
+				( v_result = result &
+				v_error = error )
+			verify v_result =r void
+			verify v_error #r void
+		end
+	end
+
+end

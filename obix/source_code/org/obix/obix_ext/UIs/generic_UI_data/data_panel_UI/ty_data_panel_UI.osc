@@ -1,0 +1,8 @@
+type data_panel_UI
+
+	inherit generic_UI end
+
+	attribute title type:simple_string voidable:yes end
+	attribute action_list type:!indexed_list<UI_action> voidable:yes end
+
+end

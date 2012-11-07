@@ -1,0 +1,52 @@
+factory single_line_text_editor type:single_line_text_editor
+
+	command write_as_HTML
+		script
+			%editor_write_as_HTML_start
+
+			const string size_att = se_form_UI_item_utilities.get_HTML_size_attribute ( &
+				specific_value = a_width_in_characters &
+				default_value = se_form_UI_config.single_line_text_width_in_characters )
+
+			if a_allowed_values_list #r void then
+
+				// list of unmodifiable options
+				i_writer.write_line ( string = """<select{{c_id_att}}{{c_name_att}}{{c_title_att}}{{c_tabindex_att}}{{c_accesskey_att}}{{c_placeholder_att}}{{class_att}} size="1" >""" )
+				repeat for each any_type allowed_value in a_allowed_values_list
+					var string option = iif c_allowed_value #r void then c_allowed_value.to_string else se_any_type.void_object_as_string end if
+					v_option = se_HTML_utilities.escape_HTML_data_for_input_value ( v_option  )
+					i_writer.write ( """<option value="{{v_option}}"""" )
+					if c_default_value #r void and c_default_value.to_string =v v_option then
+						i_writer.write ( string = ''' selected="selected"''' )
+					end if
+					i_writer.write_line ( string = """>{{v_option}}</option>""" )
+				end
+				i_writer.write_line ( string = '''</select>''' )
+				
+			else if a_example_values_list #r void then
+
+				// list of modifiable options
+				// Use HTML5 datalist tag with autocomplete functionality
+				const string list_id = c_id_att_value & "_list"
+				i_writer.write_line ( string = """<input {{c_id_att}}{{c_name_att}}{{c_title_att}}{{c_tabindex_att}}{{c_accesskey_att}}{{c_placeholder_att}}{{class_att}}{{c_value_att}}{{c_size_att}} list="{{c_list_id}}" >""" )
+				i_writer.write_line ( string = """<datalist id="{{c_list_id}}">""" )
+				repeat for each any_type example_value in a_example_values_list
+					var string option = iif c_example_value #r void then c_example_value.to_string else se_any_type.void_object_as_string end if
+					v_option = se_HTML_utilities.escape_HTML_data_for_input_value ( v_option )
+					i_writer.write_line ( string = """<option value="{{v_option}}">""" )
+				end
+				i_writer.write_line ( string = '''</datalist>''' )
+
+			else
+
+				i_writer.write ( """<input type="text"{{c_id_att}}{{c_name_att}}{{c_title_att}}{{c_tabindex_att}}{{c_accesskey_att}}{{c_placeholder_att}}{{c_class_att}}{{c_value_att}}{{c_size_att}} />""" )
+
+			end if
+
+			%editor_write_as_HTML_end
+		end
+	end
+
+	creator create kind:in_all end
+
+end

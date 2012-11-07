@@ -1,0 +1,79 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory string_tree type:string_tree
+
+	attribute branch_node_list type:!indexed_list<string_tree> private:yes end
+	attribute leaf_node_list type:indexed_string_list private:yes end
+
+	attribute branch_node_iterator
+		get
+			script
+				o_branch_node_iterator = a_branch_node_list.item_iterator
+			end
+		end
+	end
+
+	attribute leaf_node_iterator
+		get
+			script
+				o_leaf_node_iterator = a_leaf_node_list.item_iterator
+			end
+		end
+	end
+	
+	creator create
+		in branch_node_list type:!indexed_list<string_tree> end
+		in leaf_node_list type:indexed_string_list end
+
+		out result type:string_tree end
+		
+		script
+			o_result.branch_node_list = i_branch_node_list
+			o_result.leaf_node_list = i_leaf_node_list
+		end
+	end
+
+	creator create_empty
+		out result type:string_tree end
+		
+		script
+			o_result.branch_node_list = !indexed_list_factory<string_tree>.create_empty
+			o_result.leaf_node_list = fa_indexed_string_list.create_empty
+		end
+	end
+
+	creator create_with_only_leaf_nodes
+		out result type:string_tree end
+		
+		script
+			o_result.branch_node_list = !indexed_list_factory<string_tree>.create_empty
+			o_result.leaf_node_list = fa_indexed_string_list.create_trio ( item1 = "leaf node 1"; item2 = "leaf node 2"; item3 = "leaf node 3" )
+		end
+	end
+
+	creator create_with_only_branch_nodes
+		out result type:string_tree end
+		
+		script
+			const string_tree node_with_leaves = create_with_only_leaf_nodes
+			o_result.branch_node_list = !indexed_list_factory<string_tree>.create_duo ( item1 = c_node_with_leaves; item2 = c_node_with_leaves )
+			o_result.leaf_node_list = fa_indexed_string_list.create_empty
+		end
+	end
+
+	creator create_with_branch_and_leaf_nodes
+		out result type:string_tree end
+		
+		script
+			const string_tree node_with_leaves = create_with_only_leaf_nodes
+			o_result.branch_node_list = !indexed_list_factory<string_tree>.create_duo ( item1 = c_node_with_leaves; item2 = c_node_with_leaves )
+			o_result.leaf_node_list = fa_indexed_string_list.create_trio ( item1 = "leaf node 1"; item2 = "leaf node 2"; item3 = "leaf node 3" )
+		end
+	end
+
+end

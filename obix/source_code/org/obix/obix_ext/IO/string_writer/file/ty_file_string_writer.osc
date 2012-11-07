@@ -1,0 +1,13 @@
+type file_string_writer
+
+	inherit simple_string_writer end
+
+	attribute file type:file end
+	
+	%supported_character_set_attribute
+
+	attribute append_mode type:yes_no end
+
+	attribute auto_flush type:yes_no default:no end
+	
+end

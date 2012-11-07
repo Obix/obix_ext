@@ -1,0 +1,9 @@
+type void_object_writer
+
+	attribute void_symbol type:string default: se_any_type.void_object_as_string end
+
+	command write_void
+		in writer type:simple_string_writer end
+	end
+	
+end

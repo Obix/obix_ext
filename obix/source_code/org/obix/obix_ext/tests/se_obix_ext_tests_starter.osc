@@ -1,0 +1,19 @@
+service obix_ext_tests_starter
+
+	command start
+		in command_line_arguments type:indexed_string_list voidable:yes end
+		
+		script
+			const yes_no success = se_test_commands.run_project_tests_from_command_line ( &
+				command_line_arguments = i_command_line_arguments &
+				project_start_library_id_path = fa_library_id_path.create ( "org.obix.obix_ext"~ ) )
+		
+			if c_success then
+				se_system.exit_with_success
+			else
+				se_system.exit_with_error
+			end if
+		end
+	end
+
+end

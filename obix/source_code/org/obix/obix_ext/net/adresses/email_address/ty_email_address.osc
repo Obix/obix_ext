@@ -1,0 +1,8 @@
+type email_address default_factory:yes
+
+   inherit simple_string
+      // http://www.regular-expressions.info/email.html
+      attribute value and_check: i_value.matches_regex ( fa_regex.create ( """^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$""".value ) ) end
+   end
+
+end type

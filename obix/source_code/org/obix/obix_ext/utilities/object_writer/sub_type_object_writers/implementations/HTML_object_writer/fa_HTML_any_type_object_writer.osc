@@ -1,0 +1,150 @@
+factory HTML_any_type_object_writer type:HTML_any_type_object_writer
+
+	command write_object
+		script
+			if i_object =r void then
+				a_void_object_writer.write_void ( &
+					writer = i_writer )
+				exit script
+			end if
+
+			case type of i_object
+
+				when scalar scalar then
+					a_scalar_object_writer.write_scalar ( &
+						scalar = c_scalar &
+						writer = i_writer )
+						
+				when !iteratable<*> iteratable then
+					a_iteratable_object_writer.write_iteratable ( &
+						iteratable = c_iteratable &
+						writer = i_writer )
+				
+				when !simple_tree_node<*> tree then
+					a_tree_object_writer.write_tree ( &
+						tree = c_tree &
+						writer = i_writer )
+						
+				when generic_UI generic_UI then
+					c_generic_UI.write_as_HTML ( i_writer )
+				
+				otherwise
+					a_composite_object_writer.write_composite ( &
+						composite = i_object &
+						writer = i_writer )
+			end case
+					
+		end
+	end
+	
+	creator create kind:in_all
+		script
+			o_result.void_object_writer = i_void_object_writer
+			o_result.scalar_object_writer = i_scalar_object_writer
+			o_result.composite_object_writer = i_composite_object_writer
+			o_result.iteratable_object_writer = i_iteratable_object_writer
+			o_result.tree_object_writer = i_tree_object_writer
+
+			i_composite_object_writer.any_type_object_writer = o_result
+			i_iteratable_object_writer.any_type_object_writer = o_result
+			i_tree_object_writer.any_type_object_writer = o_result
+		end
+	end
+	
+	test
+		script
+			const memory_string_writer writer = fa_memory_string_writer.create
+			const HTML_any_type_object_writer to = co_create
+			
+			// void
+			to.write_object ( &
+				object = void &
+				writer = c_writer )
+			verify c_writer.result compare =v se_any_type.void_object_as_string
+
+			// scalars
+
+			c_writer.reset
+			to.write_object ( &
+				object = "qwe" &
+				writer = c_writer )
+			verify c_writer.result compare =v "qwe"
+///
+			// composite object
+
+			v_writer.reset
+			v_event_handler = co_create_for_HTML_snippet ( &
+				writer = v_writer &
+				close_writer_when_finished = no )
+			v_traverser = fa_object_traverser.create ( &
+				event_handler = v_event_handler )
+
+			// first test: simple object
+			const test_object test_object_1 = fa_test_object.create ( &
+				string_attribute = "joy" &
+				positive32_attribute = 123 &
+				yes_no_attribute = yes &
+				character_attribute = 'x' &
+				object_attribute = void &
+				list_attribute = void )
+			v_traverser.traverse_object ( c_test_object_1  )
+			
+			verify v_writer.result compare =v '''<table><tr><td>string_attribute:</td><td>joy</td></tr><tr><td>positive32_attribute:</td><td>123</td></tr><tr><td>yes_no_attribute:</td><td>yes</td></tr><tr><td>character_attribute:</td><td>x</td></tr><tr><td>object_attribute:</td><td>#void#</td></tr><tr><td>list_attribute:</td><td>#void#</td></tr></table>'''
+end ///
+			///
+			// second test: nested object
+			const test_object test_object_2 = fa_test_object.create ( &
+				string_attribute = "vey happy" &
+				positive32_attribute = 123 &
+				yes_no_attribute = yes &
+				character_attribute = 'x' &
+				object_attribute = void &
+				list_attribute = !mutable_indexed_list_factory<any_type>.create_trio ( &
+					item1 = "string_item" &
+					item2 = 100 &
+					item3 = yes ) )
+			const any_type test_object_3 = fa_test_object.create ( &
+				string_attribute = "JSON test" &
+				positive32_attribute = 200 &
+				yes_no_attribute = no &
+				character_attribute = 'a' &
+				object_attribute = c_test_object_2 &
+				list_attribute = !mutable_indexed_list_factory<any_type>.create_trio ( &
+					item1 = "string_item" &
+					item2 = void &
+					item3 = 'c' ) )
+
+			v_writer = fa_memory_string_writer.create
+			v_event_handler = co_create ( &
+				writer = v_writer &
+				close_writer_when_finished = yes &
+				add_HTML_page_header = no &
+				add_HTML_page_footer = no )
+
+			c_traverser.traverse_object_attributes ( &
+				object = c_test_object_3 &
+				event_handler = v_event_handler )
+			v_result = v_writer.result
+			
+			verify v_result compare =v '''<table cellpadding="2"><tr><td valign="top">string_attribute:</td><td>JSON&nbsp;test</td></tr><tr><td valign="top">positive32_attribute:</td><td>200</td></tr><tr><td valign="top">yes_no_attribute:</td><td>no</td></tr><tr><td valign="top">character_attribute:</td><td>a</td></tr><tr><td valign="top">object_attribute:</td><td><table cellpadding="2"><tr><td valign="top">string_attribute:</td><td>vey&nbsp;happy</td></tr><tr><td valign="top">positive32_attribute:</td><td>123</td></tr><tr><td valign="top">yes_no_attribute:</td><td>yes</td></tr><tr><td valign="top">character_attribute:</td><td>x</td></tr><tr><td valign="top">object_attribute:</td><td>#void#</td></tr><tr><td valign="top">list_attribute:</td><td>string_item<br />100<br />yes</td></tr></table></td></tr><tr><td valign="top">list_attribute:</td><td>string_item<br />#void#<br />c</td></tr></table>'''
+				
+			// third test: nested object with limits
+			v_writer = fa_memory_string_writer.create
+			v_event_handler = co_create ( &
+				writer = v_writer &
+				close_writer_when_finished = yes &
+				add_HTML_page_header = no &
+				add_HTML_page_footer = no )
+			c_traverser.traverse_object_attributes ( &
+				object = c_test_object_3 &
+				event_handler = v_event_handler &
+				max_attribute_level = 1 &
+				max_list_items_traversed = 2 )
+			v_result = v_writer.result
+			
+			verify v_result compare =v '''<table cellpadding="2"><tr><td valign="top">string_attribute:</td><td>JSON&nbsp;test</td></tr><tr><td valign="top">positive32_attribute:</td><td>200</td></tr><tr><td valign="top">yes_no_attribute:</td><td>no</td></tr><tr><td valign="top">character_attribute:</td><td>a</td></tr><tr><td valign="top">object_attribute:</td><td>Object&nbsp;of&nbsp;type&nbsp;test_object</td></tr><tr><td valign="top">list_attribute:</td><td>string_item<br />#void#<br />...</td></tr></table>'''
+end ///			
+		end
+	end test
+
+end

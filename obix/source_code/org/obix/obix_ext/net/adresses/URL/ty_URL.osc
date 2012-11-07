@@ -1,0 +1,31 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+type URL
+
+	inherit simple_non_empty_string
+		attribute a_value
+			and_check
+				script
+					const invalid_URL_error URL_error = se_URL.check_valid_URL ( i_value )
+					check URL_error =r void &
+						error_message: URL_error.description &
+						error_id: invalid_URL
+				end
+			end
+		end
+	end
+
+	inherit resource end
+
+	command to_URI
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output<URI>
+	end
+
+end type

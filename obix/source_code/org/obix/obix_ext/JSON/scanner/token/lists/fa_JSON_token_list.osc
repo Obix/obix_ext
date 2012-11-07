@@ -1,0 +1,5 @@
+factory JSON_token_list type:JSON_token_list
+
+	!indexed_list_factory<JSON_token>
+	
+end

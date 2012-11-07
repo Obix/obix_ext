@@ -1,0 +1,35 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory generic_string_to_enumerated_object_converter type:generic_string_to_enumerated_object_converter
+
+	command convert
+		script
+			var system_error conversion_error
+			se_enumerated.string_to_enumerated ( &
+				string = i_input &
+				enumerated_type_id = a_enumerated_type.id &
+				config = a_config &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				v_conversion_error = error )
+			if v_conversion_error #r void then
+				o_error = fa_string_to_object_conversion_error.create ( &
+					i_id = "string_to_enumerated_type_conversion_error" &
+					description = """'{{i_input}}' cannot be converted to an object of type '{{a_enumerated_type.id.suffix}}'. Reason:
+{{v_conversion_error.description}}""" &
+					data = i_input &
+					type_of_result = a_enumerated_type.id_path &
+					error_position = void )
+			end if
+		end
+	end
+	
+	
+	creator create kind:in_all end
+
+end

@@ -1,0 +1,66 @@
+factory one_shot_timer type:one_shot_timer
+
+	java
+		private javax.swing.Timer a_java_timer ;
+
+		private static class cl_action_listener implements java.awt.event.ActionListener {
+		
+			private in_one_shot_timer a_one_shot_timer ;
+		
+			cl_action_listener ( in_one_shot_timer i_one_shot_timer ) {
+				a_one_shot_timer = i_one_shot_timer ;
+			}
+
+			public void actionPerformed ( java.awt.event.ActionEvent i_event ) {
+				a_one_shot_timer.getCommand_object().co_execute_command() ;
+			}
+		}
+	end java
+
+	command start
+		script
+			java
+				a_java_timer.start() ;
+			end java
+		end
+	end
+
+	command cancel
+		script
+			java
+				a_java_timer.stop() ;
+			end java
+		end
+	end
+
+	command is_running
+		script
+			java
+				o_result = a_java_timer.isRunning() ? fa_yes_no.a_yes : fa_yes_no.a_no ;
+			end java
+		end
+	end
+
+	creator create
+		in command_object type:command_object end
+		in delay_in_milliseconds type:positive32 end
+		in start_immediately type:yes_no default:yes end
+
+		out result type:one_shot_timer end
+
+		script
+			o_result.a_command_object = i_command_object
+			o_result.a_delay_in_milliseconds = i_delay_in_milliseconds
+
+			java
+				o_result.a_java_timer = new javax.swing.Timer ( i_delay_in_milliseconds.getValue().java_value(), new cl_action_listener ( o_result ) ) ;
+				o_result.a_java_timer.setRepeats ( false ) ;
+			end java
+
+			if i_start_immediately then
+				o_result.co_start
+			end if
+		end script
+	end creator
+
+end factory

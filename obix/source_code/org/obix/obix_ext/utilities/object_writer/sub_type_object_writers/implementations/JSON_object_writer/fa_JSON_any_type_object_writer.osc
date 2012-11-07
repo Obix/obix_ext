@@ -1,0 +1,54 @@
+factory JSON_any_type_object_writer type:JSON_any_type_object_writer
+
+	command write_object
+		script
+			if i_object =r void then
+				a_void_object_writer.write_void ( &
+					writer = i_writer )
+				exit script
+			end if
+
+			case type of i_object
+
+				when scalar scalar then
+					a_scalar_object_writer.write_scalar ( &
+						scalar = c_scalar &
+						writer = i_writer )
+						
+				when !iteratable<*> iteratable then
+					a_iteratable_object_writer.write_iteratable ( &
+						iteratable = c_iteratable &
+						writer = i_writer )
+				
+				when !simple_tree_node<*> tree then
+					a_tree_object_writer.write_tree ( &
+						tree = c_tree &
+						writer = i_writer )
+						
+				// when generic_UI generic_UI then
+				// 	c_generic_UI.write_as_JSON ( i_writer )
+				
+				otherwise
+					a_composite_object_writer.write_composite ( &
+						composite = i_object &
+						writer = i_writer )
+			end case
+					
+		end
+	end
+	
+	creator create kind:in_all
+		script
+			o_result.void_object_writer = i_void_object_writer
+			o_result.scalar_object_writer = i_scalar_object_writer
+			o_result.composite_object_writer = i_composite_object_writer
+			o_result.iteratable_object_writer = i_iteratable_object_writer
+			o_result.tree_object_writer = i_tree_object_writer
+
+			i_composite_object_writer.any_type_object_writer = o_result
+			i_iteratable_object_writer.any_type_object_writer = o_result
+			i_tree_object_writer.any_type_object_writer = o_result
+		end
+	end
+
+end

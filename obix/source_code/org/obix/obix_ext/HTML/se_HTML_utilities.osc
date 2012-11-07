@@ -1,0 +1,49 @@
+service HTML_utilities
+
+	java_header
+		import org.apache.commons.lang3.StringEscapeUtils;
+	end java_header
+	
+	command escape_HTML_code
+		in HTML_code type:simple_string end
+		// in escape_current_OS_new_line_characters type:yes_no default:yes end
+		// in escape_spaces type:yes_no default:yes end
+
+		out result type:string end
+		
+		script
+			java
+				o_result = new fa_string ( StringEscapeUtils.escapeHtml4 ( i_HTML_code.getValue().java_value() ) );
+			end java
+
+			o_result = o_result.replace_all ( &
+				to_replace = se_string_constants.space &
+				replace_by = se_HTML_constants.non_breaking_space )
+			
+			///
+			o_result = o_result.replace_all ( &
+				to_replace = se_string_constants.current_OS_new_line &
+				replace_by = se_HTML_constants.new_line_tag )
+			end ///
+			o_result = o_result.replace_all ( &
+				to_replace = se_string_constants.Windows_new_line &
+				replace_by = se_HTML_constants.new_line_tag )
+			o_result = o_result.replace_all ( &
+				to_replace = se_string_constants.Unix_new_line &
+				replace_by = se_HTML_constants.new_line_tag )
+		end
+	end
+
+	command escape_HTML_data_for_input_value
+		in data type:simple_string end
+
+		out result type:string end
+		
+		script
+			java
+				o_result = new fa_string ( StringEscapeUtils.escapeHtml4 ( i_data.getValue().java_value() ) );
+			end java
+		end
+	end
+
+end

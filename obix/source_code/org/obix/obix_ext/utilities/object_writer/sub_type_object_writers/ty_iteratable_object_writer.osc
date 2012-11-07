@@ -1,0 +1,13 @@
+type iteratable_object_writer
+
+	attribute any_type_object_writer type:any_type_object_writer voidable:yes default:void kind:variable setable:all end
+	attribute default_config type:iteratable_object_traverser_config default:fa_iteratable_object_traverser_config.create end
+
+	command write_iteratable
+		in iteratable type:!iteratable<*> end
+		in writer type:simple_string_writer end
+		in item_to_field_list_converter type:any_type_object_to_field_list_converter voidable:yes default:void end
+		in config type:iteratable_object_traverser_config voidable:yes default:void end
+	end
+	
+end

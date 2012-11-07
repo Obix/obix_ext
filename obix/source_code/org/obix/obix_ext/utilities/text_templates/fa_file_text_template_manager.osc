@@ -1,0 +1,33 @@
+factory file_text_template_manager type:file_text_template_manager
+
+	attribute text type:string voidable:yes private:yes kind:variable end
+
+	command load_text_from_file
+		script
+			se_text_file_IO.restore_string_from_file ( &
+				file = i_file &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error = error )
+
+			a_text = o_result
+		end
+	end
+	
+	command replace_variable
+		script
+			a_text = a_text.replace_all ( &
+				to_replace = se_text_template.template_variable_start_token & i_variable_name & se_text_template.template_variable_end_token &
+				replace_by = i_value )
+		end
+	end
+	
+	command get_result
+		script
+			o_result = a_text
+		end
+	end
+	
+	creator create kind:in_all end
+	
+end

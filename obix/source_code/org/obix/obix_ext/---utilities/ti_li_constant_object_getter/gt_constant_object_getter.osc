@@ -1,0 +1,13 @@
+generic type constant_object_getter
+
+	param object_type end
+	
+	type
+	
+		inherit !object_getter<{object_type}> end
+		
+		attribute constant type:{object_type} voidable:yes end
+
+	end
+	
+end

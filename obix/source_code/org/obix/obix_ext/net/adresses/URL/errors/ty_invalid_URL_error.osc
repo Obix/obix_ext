@@ -1,0 +1,8 @@
+type invalid_URL_error default_factory:yes
+
+	inherit validation_error
+		attribute a_id default:"invalid_URL" end
+		attribute data type:simple_string end
+	end
+
+end

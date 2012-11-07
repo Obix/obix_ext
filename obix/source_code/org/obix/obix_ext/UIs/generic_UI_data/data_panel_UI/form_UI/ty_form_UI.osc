@@ -1,0 +1,7 @@
+type form_UI
+
+	inherit data_panel_UI end
+
+	attribute item_list type:form_UI_item_map voidable:yes end
+
+end

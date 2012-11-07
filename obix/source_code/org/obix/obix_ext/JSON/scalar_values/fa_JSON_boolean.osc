@@ -1,0 +1,11 @@
+factory JSON_boolean type:JSON_boolean
+
+	command write
+		script
+			i_writer.write ( iif a_value then "true" else "false" end if )
+		end
+	end
+
+	creator create kind:in_all end
+
+end

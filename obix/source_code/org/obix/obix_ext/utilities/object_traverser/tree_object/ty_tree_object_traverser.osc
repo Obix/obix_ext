@@ -1,0 +1,15 @@
+type tree_object_traverser
+
+	attribute default_config type:tree_object_traverser_config default:fa_tree_object_traverser_config.create end
+
+	command traverse_tree_object
+		in tree type:!simple_tree_node<*> end
+		in event_handler type:tree_object_traverser_event_handler end
+		// in branch_node_to_field_list_converter type:any_type_object_to_field_list_converter voidable:yes default:void end
+		// in branch_node_converter type:any_type_object_converter voidable:yes default:void end
+		// in leaf_node_to_field_list_converter type:any_type_object_to_field_list_converter voidable:yes default:void end
+		// in leaf_node_converter type:any_type_object_converter voidable:yes default:void end
+		in config type:tree_object_traverser_config voidable:yes default:void end
+	end
+	
+end

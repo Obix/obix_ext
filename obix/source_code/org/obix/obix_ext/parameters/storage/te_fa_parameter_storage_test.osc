@@ -1,0 +1,52 @@
+template fa_parameter_storage_test
+
+	test
+		script
+			const text_file_parameter_storage storage = co_create
+
+			var mutable_string_parameter_list mutable_list = fa_mutable_string_parameter_list.create
+			mutable_list.add ( fa_string_parameter.create ( id = fa_parameter_id.create ( "city"~ ); value = "München in Deutschland" ) )
+			mutable_list.add ( fa_string_parameter.create ( id = fa_parameter_id.create ( "empty_string"~ ); value = "" ) )
+			mutable_list.add ( fa_string_parameter.create ( id = fa_parameter_id.create ( "space"~ ); value = " " ) )
+			mutable_list.add ( fa_string_parameter.create ( id = fa_parameter_id.create ( "tab"~ ); value = "\t" ) )
+			mutable_list.add ( fa_string_parameter.create ( id = fa_parameter_id.create ( "CR_LF"~ ); value = "\r\n" ) )
+			mutable_list.add ( fa_string_parameter.create ( id = fa_parameter_id.create ( "void_string"~ ); value = void ) )
+			mutable_list.add ( fa_string_parameter.create ( id = fa_parameter_id.create ( "multiline_with_LF"~ ); value = """line1
+line 2
+this is line 3 """ ) )
+			mutable_list.add ( fa_string_parameter.create ( id = fa_parameter_id.create ( "number"~ ); value = "123" ) )
+			mutable_list.add ( fa_string_parameter.create ( id = fa_parameter_id.create ( "the sun shines"~ ); value = "yes" ) )
+			
+			const file storage_file = se_file.create_temporary_file.result ( delete_file_on_exit = yes )
+			// system.out.write_line ( string = "storage_file: " & c_storage_file )
+			
+			var resource_error error = c_storage.store_parameter_list ( &
+				parameter_list = mutable_list.make_immutable &
+				file = c_storage_file &
+				overwrite_existing_file = yes )
+			verify v_error =r void
+			
+			var string_parameter_list string_parameter_list
+			var system_error store_error
+			c_storage.restore_string_parameter_list ( &
+				file = c_storage_file ) &
+				( v_string_parameter_list = result &
+				v_store_error = error )
+			verify v_store_error =r void
+			
+			verify v_string_parameter_list.item_count compare =v 9
+			verify v_string_parameter_list.require_value ( fa_parameter_id.create ( "city"~ ) ) compare =v "München in Deutschland"
+			verify v_string_parameter_list.require_value ( fa_parameter_id.create ( "empty_string"~ ) ) compare =v ""
+			verify v_string_parameter_list.require_value ( fa_parameter_id.create ( "space"~ ) ) compare =v " "
+			verify v_string_parameter_list.require_value ( fa_parameter_id.create ( "tab"~ ) ) compare =v "\t"
+			verify v_string_parameter_list.require_value ( fa_parameter_id.create ( "CR_LF"~ ) ) compare =v "\r\n"
+			verify v_string_parameter_list.require_value ( fa_parameter_id.create ( "void_string"~ ) ) =r void
+			verify v_string_parameter_list.require_value ( fa_parameter_id.create ( "multiline_with_LF"~ ) ) =v """line1
+line 2
+this is line 3 """
+			verify v_string_parameter_list.require_value ( fa_parameter_id.create ( "number"~ ) ) compare =v "123"
+			verify v_string_parameter_list.require_value ( fa_parameter_id.create ( "the sun shines"~ ) ) compare =v "yes"
+		end
+	end
+
+end template

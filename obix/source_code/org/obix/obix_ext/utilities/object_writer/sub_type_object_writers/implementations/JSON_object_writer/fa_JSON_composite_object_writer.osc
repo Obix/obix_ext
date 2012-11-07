@@ -1,0 +1,61 @@
+factory JSON_composite_object_writer type:composite_object_writer
+
+	attribute composite_object_traverser type:composite_object_traverser default:fa_composite_object_traverser.create private:yes end
+
+	command write_composite
+		script
+			const composite_object_traverser_event_handler event_handler = fa_JSON_writer_composite_object_traverser_event_handler.create ( &
+				any_type_object_writer = a_any_type_object_writer &
+				writer = i_writer )
+			a_composite_object_traverser.traverse_composite_object ( &
+				object = i_composite &
+				event_handler = c_event_handler &
+				attributes_to_field_list_converter = i_attributes_to_field_list_converter )
+		end
+	end
+	
+	creator create kind:in_all end
+
+	///
+	test
+		script
+			const memory_string_writer writer = fa_memory_string_writer.create
+			const composite_object_writer to = co_create ( any_type_object_writer = fa_JSON_object_writer.create )
+
+			const test_object test_object_1 = fa_test_object.create ( &
+				string_attribute = "joy" &
+				positive32_attribute = 123 &
+				yes_no_attribute = yes &
+				character_attribute = 'x' &
+				object_attribute = void &
+				list_attribute = void )
+			to.write_composite ( &
+				composite= test_object_1 &
+				writer = c_writer )
+			verify c_writer.result compare =v '''{"string_attribute":"joy","positive32_attribute":123,"yes_no_attribute":true,"character_attribute":"x","object_attribute":null,"list_attribute":null}'''
+			
+			c_writer.reset
+			to.write_composite ( &
+				composite= test_object_1 &
+				writer = c_writer &
+				information_level = ty_object_information_level.yes_no )
+			verify c_writer.result compare =v "true"
+			
+			c_writer.reset
+			to.write_composite ( &
+				composite= test_object_1 &
+				writer = c_writer &
+				information_level = ty_object_information_level.none )
+			verify c_writer.result compare =v '''""'''
+			
+			c_writer.reset
+			to.write_composite ( &
+				composite= test_object_1 &
+				writer = c_writer &
+				information_level = ty_object_information_level.string )
+			verify c_writer.result compare =v '''"Object of type test_object"'''
+		end
+	end test
+	end ///
+
+end

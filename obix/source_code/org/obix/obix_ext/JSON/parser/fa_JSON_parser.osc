@@ -1,0 +1,168 @@
+factory JSON_parser type:JSON_parser
+
+/// Note: This factory uses software from JSON.org wich is published under the following license:
+
+Copyright (c) 2002 JSON.org
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+The Software shall be used for Good, not Evil.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+end ///
+
+	// TD3
+	// dont'use JSON.org, because the conversion from the Java object to the Obix object takes time
+	// (e.g. Java parsing: 31ms; conversion to Obix: 62ms)
+	// use ty_scanner instead
+
+	java_header
+		import org.json.JSONObject;
+		import org.json.JSONArray;
+		import org.json.JSONException;
+		
+		import org.obix.obix_core.basics.scalars.string.string_value.fa_string_value;
+		import org.obix.obix_core.basics.scalars.number.integer.integer32.integer32_value.fa_integer32_value;
+		import org.obix.obix_core.basics.scalars.number.floating_point.float64.float64_value.fa_float64_value;
+		import org.obix.obix_ext.JSON.*;
+		import org.obix.obix_ext.JSON.object.*;
+		import org.obix.obix_ext.JSON.array.*;
+		import org.obix.obix_ext.JSON.scalar_values.*;
+		import org.obix.obix_ext.JSON.object.member.*;
+	end java_header
+	
+	java
+		private in_JSON_object create_JSON_object ( JSONObject java_JSON_object ) throws JSONException {
+
+			// convert the Java JSONObject to an Obix JSON_object
+			
+			in_mutable_JSON_object JSON_object = fa_mutable_JSON_object.co_create_command();
+
+			for ( String id : java_JSON_object.getNames(java_JSON_object) ) {
+
+				in_JSON_object_member_id obix_id = fa_JSON_object_member_id.co_create_command ( new fa_string_value ( id ) );
+
+				Object java_value = java_JSON_object.get ( id );
+				
+				in_JSON_object_member member = null;
+
+				if ( java_value instanceof String ) {
+					in_JSON_string obix_value = fa_JSON_string.co_create_command ( new fa_string_value ( (String) java_value ) );
+					member = fa_JSON_object_string_member.co_create_command ( obix_id, obix_value );
+
+				} else if ( java_value instanceof Integer ) {
+					in_JSON_integer obix_value = fa_JSON_integer.co_create_command ( new fa_integer32_value ( (Integer) java_value ) );
+					member = fa_JSON_object_integer_member.co_create_command ( obix_id, obix_value );
+
+				} else if ( java_value instanceof Double ) {
+					in_JSON_decimal obix_value = fa_JSON_decimal.co_create_command ( new fa_float64_value ( (Double) java_value ) );
+					member = fa_JSON_object_decimal_member.co_create_command ( obix_id, obix_value );
+
+				} else if ( java_value instanceof Boolean ) {
+					in_JSON_boolean obix_value = fa_JSON_boolean.co_create_command ( new fa_yes_no ( (Boolean) java_value ) );
+					member = fa_JSON_object_boolean_member.co_create_command ( obix_id, obix_value );
+
+				} else if ( java_value == JSONObject.NULL ) {
+					member = fa_JSON_object_null_member.co_create_command ( obix_id, se_JSON_null.getShared_value() );
+
+				} else if ( java_value instanceof JSONObject ) {
+					in_JSON_object obix_value = create_JSON_object ( (JSONObject) java_value );
+					member = fa_JSON_object_object_member.co_create_command ( obix_id, obix_value );
+
+				} else if ( java_value instanceof JSONArray ) {
+					in_JSON_array obix_value = create_JSON_array ( (JSONArray) java_value );
+					member = fa_JSON_object_array_member.co_create_command ( obix_id, obix_value );
+
+				} else {
+					throw new JSONException ( java_value.getClass().getName() + " is an unexpected class for a JSON value." );
+				}
+
+				if (member != null ) {
+				JSON_object.co_add_command ( member );
+				}
+			}
+			
+			return JSON_object.co_copy_to_immutable_command();
+		}
+
+		private in_JSON_array create_JSON_array ( JSONArray java_JSON_array ) throws JSONException {
+			
+			in_mutable_JSON_array JSON_array = fa_mutable_JSON_array.co_create_command();
+
+			for ( int i = 0; i < java_JSON_array.length(); i++ ) {
+
+				Object java_value = java_JSON_array.get ( i );
+				
+				in_JSON_value obix_value = null;
+
+				if ( java_value instanceof String ) {
+					obix_value = fa_JSON_string.co_create_command ( new fa_string_value ( (String) java_value ) );
+
+				} else if ( java_value instanceof Integer ) {
+					obix_value = fa_JSON_integer.co_create_command ( new fa_integer32_value ( (Integer) java_value ) );
+
+				} else if ( java_value instanceof Double ) {
+					obix_value = fa_JSON_decimal.co_create_command ( new fa_float64_value ( (Double) java_value ) );
+
+				} else if ( java_value instanceof Boolean ) {
+					obix_value = fa_JSON_boolean.co_create_command ( new fa_yes_no ( (Boolean) java_value ) );
+
+				} else if ( java_value == JSONObject.NULL ) {
+					obix_value = se_JSON_null.getShared_value();
+
+				} else if ( java_value instanceof JSONObject ) {
+					obix_value = create_JSON_object ( (JSONObject) java_value );
+
+				} else if ( java_value instanceof JSONArray ) {
+					obix_value = create_JSON_array ( (JSONArray) java_value );
+
+				} else {
+					throw new JSONException ( java_value.getClass().getName() + " is an unexpected class for a JSON value." );
+				}
+
+				JSON_array.co_append_command ( obix_value );
+			}
+
+			return JSON_array.co_copy_to_immutable_command();
+		}
+	end java
+
+	command parse
+		script
+			var string error_message
+			java
+				JSONObject java_JSON_object = null;
+				try {
+					java_JSON_object = new JSONObject ( i_string.getValue().java_value() );
+					o_result = create_JSON_object ( java_JSON_object );
+				} catch ( JSONException e ) {
+					v_error_message = new fa_string ( e.getMessage() );
+				}
+			end java
+			if v_error_message #r void then
+				o_error = fa_JSON_parsing_error.create ( &
+					description = "The following error occured during JSON parsing: " & v_error_message &
+					data = i_string )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+	
+	creator create kind:in_all end
+
+end

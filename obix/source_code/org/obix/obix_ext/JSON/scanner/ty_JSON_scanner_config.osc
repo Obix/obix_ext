@@ -1,0 +1,9 @@
+type JSON_scanner_config default_factory:yes
+
+	attribute_list type:yes_no
+		// attribute allow_unquoted_name_or_value default:no end
+		attribute allow_single_quoted_name_or_value default:no end
+		attribute convert_escape_characters default:yes end
+	end
+	
+end

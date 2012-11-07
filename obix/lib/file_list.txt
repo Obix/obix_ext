@@ -1,0 +1,15 @@
+# This file defines pointers to .oar files used in your project
+# Each line represents a pointer to one or more .oar files
+# One or more pointer lines can be defined
+# There are 4 syntaxes supported:
+#    1. absolute file
+#       example: file /foo/bar/zar.oar
+#    2. relative file (relative to the directory of this configuration file)
+#       example: rel file foo/bar/zar.oar
+#    3. absolute directory (all files in the directory will be used)
+#       example: dir /foo/bar/
+#    4. relative directory (relative to the directory of this configuration file; all files in the directory will be used)
+#       example: rel dir ../foo/bar/
+# Comment lines start with #
+
+rel dir ../../../../obix_core/run/obix_core/obix_lib/

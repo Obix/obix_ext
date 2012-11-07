@@ -1,0 +1,38 @@
+factory default_value_script_string_getter type:string_object_getter
+
+	attribute RSE_id_path type:RSE_id_path private:yes end
+	attribute method_name type:simple_non_empty_string private:yes end
+	
+	command get_object
+		script
+			var any_type any_type_result
+			se_java_reflection.execute_static_class_method_3 ( &
+				class_path = a_RSE_id_path &
+				method_name = a_method_name &
+				reload_class = no &
+				error_handler = i_error_handler ) &
+				( v_any_type_result = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+			
+			if v_any_type_result #r void then
+				o_result = v_any_type_result.to_string
+			end if
+		end
+	end
+	
+	creator create
+		in RSE_id_path type:RSE_id_path end
+		in method_name type:simple_non_empty_string end
+		
+		out result type:string_object_getter end
+		
+		script
+			o_result.RSE_id_path = i_RSE_id_path
+			o_result.method_name = i_method_name
+		end
+	end
+	
+end

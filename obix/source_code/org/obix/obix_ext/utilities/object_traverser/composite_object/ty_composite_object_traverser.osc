@@ -1,0 +1,9 @@
+type composite_object_traverser
+
+	command traverse_composite_object
+		in object type:any_type end
+		in event_handler type:composite_object_traverser_event_handler end
+		in attributes_to_field_list_converter type:any_type_object_to_field_list_converter voidable:yes default:void end
+	end
+	
+end

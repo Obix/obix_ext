@@ -1,0 +1,21 @@
+factory constant_string_getter type:string_object_getter
+
+	attribute string type:string voidable:yes private:yes end
+	
+	command get_object
+		script
+			o_result = a_string
+		end
+	end
+	
+	creator create
+		in string type:string voidable:yes end
+		
+		out result type:string_object_getter end
+		
+		script
+			o_result.string = i_string
+		end
+	end
+	
+end

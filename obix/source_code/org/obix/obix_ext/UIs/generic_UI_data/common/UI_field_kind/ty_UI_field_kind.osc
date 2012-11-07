@@ -1,0 +1,5 @@
+type UI_field_kind
+
+	enumerated single_line_text; multi_line_text; character; integer_number; decimal_number; yes_no_value; date; time; local_time; date_time; local_date_time; directory; file; image; audio; video end
+	
+end

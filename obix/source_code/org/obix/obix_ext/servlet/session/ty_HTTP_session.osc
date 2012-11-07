@@ -1,0 +1,26 @@
+type HTTP_session
+
+	attribute session_id type:non_empty_string end
+
+	// attribute session_parameters type:mutable_any_type_parameters end // TD default:fa_mutable_any_type_parameters.create_empty end
+	attribute session_parameters type:string_parameter_list end // TD default:fa_mutable_any_type_parameters.create_empty end
+
+	attribute inactive_timeout_seconds type:positive32 voidable:yes default: 30 * 60 kind:variable setable:all end
+	
+	attribute is_new_session type:yes_no kind:readonly_variable end
+	
+	attribute_list type:local_date_time kind:readonly_variable
+
+		attribute time_created end
+
+		attribute time_last_accessed end
+		
+	end
+
+	command invalidate end
+	
+///
+ServletContext getServletContext()
+end ///
+
+end

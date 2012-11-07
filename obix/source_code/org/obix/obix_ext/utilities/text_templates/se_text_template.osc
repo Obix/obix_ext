@@ -1,0 +1,7 @@
+service text_template
+
+	attribute template_variable_start_token type:non_empty_string default:"[[" end
+
+	attribute template_variable_end_token type:non_empty_string default:"]]" end
+	
+end service

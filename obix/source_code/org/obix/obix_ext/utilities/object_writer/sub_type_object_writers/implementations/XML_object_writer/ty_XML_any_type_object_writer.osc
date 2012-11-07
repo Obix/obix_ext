@@ -1,0 +1,11 @@
+type XML_any_type_object_writer
+
+	inherit delegating_any_type_object_writer
+		attribute void_object_writer default:fa_XML_void_object_writer.create end
+		attribute scalar_object_writer default:fa_XML_scalar_object_writer.create end
+		attribute composite_object_writer default:fa_XML_composite_object_writer.create end
+		attribute iteratable_object_writer default:fa_XML_iteratable_object_writer.create end
+		attribute tree_object_writer default:fa_XML_tree_object_writer.create end
+	end
+
+end

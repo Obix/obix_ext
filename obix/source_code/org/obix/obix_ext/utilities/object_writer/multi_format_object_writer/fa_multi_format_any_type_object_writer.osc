@@ -1,0 +1,47 @@
+factory multi_format_any_type_object_writer type:multi_format_any_type_object_writer
+
+	command supports_format
+		script
+			o_result = a_object_writer_list.contains_key ( i_format_name )
+		end
+	end
+
+	command write_object
+		script
+			const any_type_object_writer object_writer = a_object_writer_list.require_item ( i_format_name )
+			c_object_writer.write_object ( &
+				object = i_object &
+				writer = i_writer  )
+		end
+	end
+	
+	
+	creator create kind:in_all end
+	
+	creator create_for_HTML_JSON_XML
+
+		out result type:multi_format_any_type_object_writer end
+		
+		script
+			const !gt_mutable_map<key_type:non_empty_string; item_type:any_type_object_writer> object_writer_map = !gf_mutable_map_factory<key_type:non_empty_string; item_type:any_type_object_writer>.create
+
+			c_object_writer_map.add ( &
+				key = "HTML" &
+				item = fa_HTML_any_type_object_writer.create )
+
+///			
+			c_object_writer_map.add ( &
+				key = "JSON" &
+				item = fa_JSON_any_type_object_writer.create )
+
+			c_object_writer_map.add ( &
+				key = "XML" &
+				item = fa_XML_any_type_object_writer.create )
+
+end ///			
+	
+			o_result.object_writer_list = c_object_writer_map.make_immutable
+		end
+	end
+	
+end

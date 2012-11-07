@@ -1,0 +1,7 @@
+type servlet_error
+
+	inherit system_error
+		attribute a_id default:"servlet_error" end
+	end inherit
+
+end type

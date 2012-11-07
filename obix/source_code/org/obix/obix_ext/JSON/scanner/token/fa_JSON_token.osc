@@ -1,0 +1,6 @@
+factory JSON_token type:JSON_token
+
+	%scalar_is_equal_to_factory_command
+	creator create kind:in_all end
+
+end

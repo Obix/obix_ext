@@ -1,0 +1,92 @@
+generic factory formal_parameter_list
+
+	param parameter_value_type end
+	
+	factory type:!gt_formal_parameter_list<{parameter_value_type}>
+	
+		attribute map type:!map < &
+			key_type:parameter_id &
+			item_type:!gt_formal_parameter<{parameter_value_type}> > &
+			private:yes end
+
+		attribute alternative_map type:!map < &
+			key_type:parameter_id &
+			item_type:!gt_formal_parameter<{parameter_value_type}> > &
+			private:yes end
+			
+		attribute item_count
+			get
+				script
+					o_item_count = a_map.item_count
+				end
+			end
+		end
+
+		attribute is_empty
+			get
+				script
+					o_is_empty = a_map.is_empty
+				end
+			end
+		end
+		
+		attribute has_required_parameters
+			get
+				script
+					o_has_required_parameters = no
+					repeat for each item !gt_formal_parameter<{parameter_value_type}> formal_parameter in a_map
+						if c_formal_parameter.default_value_getter =r void then
+							o_has_required_parameters = yes
+							exit script
+						end if
+					end repeat
+				end
+			end
+		end
+
+		command item_iterator
+			script
+				o_result = a_map.item_iterator
+			end
+		end
+
+		command contains_formal_parameter
+			script
+				o_result = a_map.contains_key ( i_parameter_id_or_alternative_id ) or &
+					a_alternative_map.contains_key ( i_parameter_id_or_alternative_id )
+			end
+		end
+
+		command require_formal_parameter
+			script
+				o_result = a_map.get_item_if_contained ( i_parameter_id_or_alternative_id )
+				if o_result =r void then
+					o_result = a_alternative_map.require_item ( i_parameter_id_or_alternative_id )
+				end if
+			end
+		end
+		
+
+		creator create_from_maps
+			in map type:!map < &
+				key_type:parameter_id &
+				item_type:!gt_formal_parameter<{parameter_value_type}> > end
+			in alternative_map type:!map < &
+				key_type:parameter_id &
+				item_type:!gt_formal_parameter<{parameter_value_type}> > default: !map_factory < &
+					key_type:parameter_id &
+					item_type:!gt_formal_parameter<{parameter_value_type}> >.create_empty end
+			in validator type:!validator < !gt_parameter_list<{parameter_value_type}> > voidable:yes end
+				
+			out result type:!gt_formal_parameter_list<{parameter_value_type}> end
+			
+			script
+				o_result.a_map = i_map
+				o_result.a_alternative_map = i_alternative_map
+				o_result.validator = i_validator
+			end
+		end
+
+	end
+		
+end

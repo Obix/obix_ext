@@ -1,0 +1,29 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service network_port_number
+
+	attribute_list type:network_port_number
+
+		// see http://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers for full list
+
+		attribute default_HTTP_port default: fa_network_port_number.create ( 80.value ) end
+		attribute default_HTTPS_port default: fa_network_port_number.create ( 443.value ) end
+
+		attribute default_SMTP_port default: fa_network_port_number.create ( 25.value ) end
+		attribute default_SMTP_SSL_port default: fa_network_port_number.create ( 465.value ) end
+		attribute default_IMAP_port default: fa_network_port_number.create ( 143.value ) end
+		attribute default_IMAP_SSL_port default: fa_network_port_number.create ( 993.value ) end
+		attribute default_POP_port default: fa_network_port_number.create ( 110.value ) end
+		attribute default_POP_SSL_port default: fa_network_port_number.create ( 995.value ) end
+
+		attribute default_FTP_port default: fa_network_port_number.create ( 21.value ) end
+		attribute default_SSH_port default: fa_network_port_number.create ( 22.value ) end
+		attribute default_Telnet_port default: fa_network_port_number.create ( 23.value ) end
+	end
+
+end

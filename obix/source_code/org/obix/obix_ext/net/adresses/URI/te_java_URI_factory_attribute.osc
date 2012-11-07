@@ -1,0 +1,24 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+template java_URI_factory_attribute
+	
+	param attribute end
+	param method end
+
+	attribute {attribute}
+		get
+			script
+				java
+					String result = a_java_value.{method}();
+					o_{attribute} = (result != null && result.length() > 0) ? new fa_non_empty_string(result) : null;
+				end java
+			end
+		end
+	end
+	
+end template

@@ -1,0 +1,11 @@
+type JSON_token
+
+	inherit simple_string end
+	
+	inherit !equalable<other:simple_string> end
+
+	attribute position type:positive32 voidable:yes end
+
+	attribute a_kind type:JSON_token_kind.enumerated end
+
+end type

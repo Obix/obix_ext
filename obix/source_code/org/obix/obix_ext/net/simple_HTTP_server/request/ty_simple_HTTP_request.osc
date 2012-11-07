@@ -1,0 +1,33 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+type simple_HTTP_request
+
+	inherit simple_IP_request end
+
+	attribute_list kind:readonly_constant
+		attribute protocol type:non_empty_string end
+
+		attribute method type:non_empty_string end
+
+		attribute path type:non_empty_string end
+		attribute query type:non_empty_string voidable:yes end
+		attribute query_map type:string_string_map voidable:yes end
+	end
+
+	command get_query_value_if_exists
+		in query_name type:simple_non_empty_string end
+		
+		out result type:string voidable:yes end
+	end
+
+	command get_string_body_reader
+		
+		out result type:simple_string_reader end
+	end
+
+end

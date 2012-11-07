@@ -1,0 +1,7 @@
+type JSON_object_string_member
+
+	inherit JSON_object_member
+		attribute value type:JSON_string end
+	end
+
+end

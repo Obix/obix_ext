@@ -1,0 +1,66 @@
+factory mutable_object_field_description_map type:mutable_object_field_description_map
+
+	attribute map type:!mutable_map < key_type: simple_non_empty_string item_type: object_field_description > private:yes end
+
+	attribute is_empty
+		get
+			script
+				o_is_empty = a_map.is_empty
+			end
+		end
+	end
+
+	attribute item_count
+		get
+			script
+				o_item_count = a_map.item_count
+			end
+		end
+	end
+
+	command item_iterator
+		script
+			o_result = a_map.item_iterator
+		end
+	end
+
+	command contains_id
+		script
+			o_result = a_map.contains_key ( i_id )
+		end
+	end
+
+	command add_field
+		script
+			a_map.add ( &
+				key = i_field.id &
+				item = i_field )
+			o_result = this
+		end
+	end
+
+	command add
+		script
+			o_result = co_add_field ( fa_object_field_description.create ( &
+				id = i_id &
+				label = iif i_label #r void then i_label else se_generic_UI_utilities.convert_id_to_label ( i_id ) end if &
+				UI_field_kind = i_UI_field_kind ) )
+		end
+	end
+
+	command make_immutable
+		script
+			o_result = a_map.make_immutable
+		end
+	end
+
+
+	creator create
+		out result type: mutable_object_field_description_map end
+		
+		script
+			o_result.map = !mutable_map_factory < key_type: simple_non_empty_string item_type: object_field_description >.create
+		end
+	end
+
+end factory

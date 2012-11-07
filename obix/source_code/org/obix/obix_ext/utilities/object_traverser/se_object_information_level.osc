@@ -1,0 +1,32 @@
+service object_information_level
+
+	command get_object_value
+		in original_object_value type:any_type voidable:yes end
+		in information_level type:object_information_level.enumerated end
+		
+		out result type:any_type voidable:yes end
+		
+		script
+			if i_original_object_value =r void then
+				exit script
+			end if
+
+			if i_information_level =r ty_object_information_level.detail then
+				o_result = i_original_object_value
+
+			else if i_information_level =r ty_object_information_level.string then
+				o_result = i_original_object_value.to_string
+
+			else if i_information_level =r ty_object_information_level.yes_no then
+				o_result = i_original_object_value #r void
+
+			else if i_information_level =r ty_object_information_level.none then
+				o_result = ""
+
+			else
+				error """Unexpected information_level '{{i_information_level}}'"""
+			end if
+		end
+	end
+	
+end

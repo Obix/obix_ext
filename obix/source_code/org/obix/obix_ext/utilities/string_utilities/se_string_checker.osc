@@ -1,0 +1,98 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service string_checker
+
+	command contains_only_letters
+		in string type:simple_non_empty_string end
+
+		out result type:yes_no end
+
+		script
+			repeat for each character character in i_string.value
+				if not c_character.is_letter then
+					o_result = no
+					exit script
+				end if
+			end repeat
+
+			o_result = yes
+		end
+	end
+
+	command contains_only_digits
+		in string type:simple_non_empty_string end
+
+		out result type:yes_no end
+
+		script
+			repeat for each character character in i_string.value
+				if not c_character.is_digit then
+					o_result = no
+					exit script
+				end if
+			end repeat
+
+			o_result = yes
+		end
+	end
+
+///
+	command is_all_lower_case_letter
+		in_check %check_not_empty<"i_object_"> end
+		out result type:yes_no end
+
+		script
+			java
+				o_result = fa_yes_no.a_no ;
+				for ( int i = 0; i < java_value.length(); i++ ) {
+					if ( ! Character.isLowerCase ( java_value.charAt ( i ) ) ) {
+						break _script ;
+					}
+				}
+				o_result = fa_yes_no.a_yes ;
+			end java
+		end script
+	end command
+
+	command is_all_upper_case_letter
+		in_check %check_not_empty<"i_object_"> end
+		out result type:yes_no end
+
+		script
+			java
+				o_result = fa_yes_no.a_no ;
+				for ( int i = 0; i < java_value.length(); i++ ) {
+					if ( ! Character.isUpperCase ( java_value.charAt ( i ) ) ) {
+						break _script ;
+					}
+				}
+				o_result = fa_yes_no.a_yes ;
+			end java
+		end script
+	end command
+end ///
+
+	/// TODO
+	contains_regex 						i_regex:string o_result:yes_no
+	matches_regex 						idem
+	starts_with_regex (is_start_regex) 	idem
+	ends_with_regex (is_end_regex) 		idem
+	regex_contained_count 				i_regex:string o_result:zero_positive32
+
+	contains_string
+	starts_with_string
+	ends_with_string
+	string_contained_count
+
+	contains_character
+	starts_with_character
+	ends_with_character
+	character_contained_count
+	end ///
+
+end service

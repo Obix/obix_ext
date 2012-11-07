@@ -1,0 +1,31 @@
+template JSON_object_member_factory_code
+
+	param value_type end
+
+	factory JSON_object_{value_type}_member type:JSON_object_{value_type}_member
+
+		command write
+			script
+				///
+				o_error = a_id.write ( i_writer )
+
+				if o_error =r void then
+					o_error = i_writer.write ( string = ":" )
+				end if
+
+				if o_error =r void then
+					o_error = a_value.write ( i_writer )
+				end if
+				end ///
+
+				a_id.write ( i_writer )
+				i_writer.write ( ":" )
+				a_value.write ( i_writer )
+			end
+		end
+
+		creator create kind:in_all end
+
+	end
+
+end

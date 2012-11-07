@@ -1,0 +1,13 @@
+factory display_form_UI type:display_form_UI
+
+	command write_as_HTML
+		script
+			se_form_UI_helper.write_as_HTML ( &
+				writer = i_writer &
+				form_UI = this )
+		end
+	end
+
+	creator create kind:in_all end
+
+end

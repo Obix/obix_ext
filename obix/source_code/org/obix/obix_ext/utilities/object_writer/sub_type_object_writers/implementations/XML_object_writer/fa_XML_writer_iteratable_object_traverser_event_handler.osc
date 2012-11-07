@@ -1,0 +1,106 @@
+factory XML_writer_iteratable_object_traverser_event_handler type:iteratable_object_traverser_event_handler
+
+	attribute_list private:yes
+		attribute any_type_object_writer type:any_type_object_writer end
+		attribute writer type:simple_string_writer end
+	end
+
+	command on_table_start
+		script
+			a_writer.write ( "<list>" )
+		end
+	end
+	
+	command on_table_end
+		script
+			a_writer.write ( "</list>" )
+		end
+	end
+	
+	command on_table_abort
+		script
+			// do nothing
+		end
+	end
+	
+	command on_table_header_start
+		script
+			a_writer.write ( "<header>" )
+		end
+	end
+	
+	command on_table_header_end
+		script
+			a_writer.write ( "</header>" )
+		end
+	end
+	
+	command on_row_number_header
+		script
+			a_writer.write ( "<column>No.</column>" )
+		end
+	end
+
+	command on_table_header_column
+		script
+			a_writer.write ( "<column>" )
+			if i_column_header_object #r void then
+				a_writer.write ( se_XML_utilities.escape_XML_data ( i_column_header_object.to_string ) )
+			end if
+			a_writer.write ( "</column>" )
+		end
+	end
+	
+	command on_table_body_start
+		script
+			// a_writer.write ( "<tbody>" )
+		end
+	end
+	
+	command on_table_body_end
+		script
+			// a_writer.write ( "</tbody>" )
+		end
+	end
+	
+	command on_table_row_start
+		script
+			a_writer.write ( "<row>" )
+		end
+	end
+	
+	command on_table_row_end
+		script
+			a_writer.write ( "</row>" )
+		end
+	end
+	
+	command on_row_number
+		script
+			a_writer.write ( """<d>{{i_row_number.to_string}}</d>""" )
+		end
+	end
+
+	command on_table_field_object
+		script
+			a_writer.write ( "<d>" )
+			a_any_type_object_writer.write_object ( &
+				object = i_field_object &
+				writer = a_writer )
+			a_writer.write ( "</d>" )
+		end
+	end
+
+	creator create
+		in any_type_object_writer type:any_type_object_writer end
+		in writer type:simple_string_writer end
+
+		out result type:iteratable_object_traverser_event_handler end
+		
+		script
+			o_result.any_type_object_writer = i_any_type_object_writer
+			o_result.writer = i_writer
+		end
+	end
+
+end

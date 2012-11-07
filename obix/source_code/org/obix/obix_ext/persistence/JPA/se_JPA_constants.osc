@@ -1,0 +1,6 @@
+service JPA_constants
+
+	// TD value should be parameter 'persistence-unit' read from persistence.xml
+	attribute persistence_unit_name type:non_empty_string default: "JPA_Obix" end
+	
+end

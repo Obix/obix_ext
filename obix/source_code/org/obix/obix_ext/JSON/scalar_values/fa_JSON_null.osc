@@ -1,0 +1,11 @@
+factory JSON_null type:JSON_null
+
+	command write
+		script
+			i_writer.write ( "null" )
+		end
+	end
+
+	creator create kind:in_all end
+
+end

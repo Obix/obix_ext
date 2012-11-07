@@ -1,0 +1,34 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service random
+
+	java_header
+		import java.util.Random;
+	end java_header
+
+	command get_zero_positive32_random
+		in minimum type:zero_positive32 default: se_zero_positive32.zero end
+		in maximum type:zero_positive32 check: i_maximum < se_zero_positive32.max_value default: se_zero_positive32.max_value - 1 end
+		in_check check: i_maximum > i_minimum end
+		
+		out result type:zero_positive32 end
+		
+		script
+			java
+				int minimum = i_minimum.getValue().java_value();
+				int maximum = i_maximum.getValue().java_value();
+				int range = maximum - minimum + 1;
+
+				Random random = new Random();
+				int result = random.nextInt(range) + minimum;
+				o_result = new fa_zero_positive32(result);
+			end java
+		end
+	end
+
+end service

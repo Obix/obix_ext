@@ -1,0 +1,11 @@
+factory XML_void_object_writer type:void_object_writer
+
+	command write_void
+		script
+			i_writer.write ( a_void_symbol )
+		end
+	end
+
+	creator create kind:in_all end
+
+end

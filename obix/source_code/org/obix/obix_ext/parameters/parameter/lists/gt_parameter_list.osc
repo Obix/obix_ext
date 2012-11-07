@@ -1,0 +1,41 @@
+generic type parameter_list
+
+	param parameter_value_type end
+	
+	type
+
+		inherit !collection<!gt_parameter<{parameter_value_type}>> end
+	
+		command contains_parameter
+			in i_id type:parameter_id end
+			
+			out result type:yes_no end
+		end
+
+		command get_parameter_if_contained
+			in i_id type:parameter_id end
+			
+			out result type:!gt_parameter<{parameter_value_type}> voidable:yes end
+		end
+		
+		command require_parameter
+			in i_id type:parameter_id end
+			in_check check: i_object_.contains_parameter ( i_id ) end
+			
+			out result type:!gt_parameter<{parameter_value_type}> end
+		end
+
+		command require_value
+			in i_id type:parameter_id end
+			in_check check: i_object_.contains_parameter ( i_id ) end
+			
+			out result type:{parameter_value_type} voidable:yes end
+		end
+
+		command value_list
+			out result type:!indexed_list<{parameter_value_type}> end
+		end
+
+	end
+		
+end

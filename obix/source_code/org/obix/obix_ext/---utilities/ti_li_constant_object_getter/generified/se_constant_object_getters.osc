@@ -1,0 +1,9 @@
+service constant_object_getters
+
+	attribute void_regex type:regex_constant_object_getter default:fa_regex_constant_object_getter.create_for_void end
+
+	attribute void_yes_no type:yes_no_constant_object_getter default:fa_yes_no_constant_object_getter.create_for_void end
+	attribute yes type:yes_no_constant_object_getter default:fa_yes_no_constant_object_getter.create ( yes ) end
+	attribute no type:yes_no_constant_object_getter default:fa_yes_no_constant_object_getter.create ( no ) end
+	
+end

@@ -1,0 +1,7 @@
+type servlet_host_error default_factory:yes
+
+	inherit servlet_error
+		attribute a_id default:"servlet_host_error" end
+	end inherit
+
+end type

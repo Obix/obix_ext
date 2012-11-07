@@ -1,0 +1,8 @@
+type object_field_description default_factory:yes
+
+	attribute a_id type:simple_non_empty_string end
+	attribute label type:any_type end // voidable:yes end
+	attribute UI_field_kind type:UI_field_kind.enumerated default:ty_UI_field_kind.single_line_text end
+	// attribute type type:type_id_path end
+	
+end

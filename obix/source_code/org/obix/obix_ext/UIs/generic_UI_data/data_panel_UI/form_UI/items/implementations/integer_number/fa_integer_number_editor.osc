@@ -1,0 +1,19 @@
+factory integer_number_editor type:integer_number_editor
+
+	command write_as_HTML
+		script
+			%editor_write_as_HTML_start
+
+			const string size_att = se_form_UI_item_utilities.get_HTML_size_attribute ( &
+				specific_value = a_width_in_characters &
+				default_value = se_form_UI_config.integer_number_width_in_characters )
+
+			i_writer.write ( """<input type="number"{{c_id_att}}{{c_name_att}}{{c_title_att}}{{c_tabindex_att}}{{c_accesskey_att}}{{c_placeholder_att}}{{c_class_att}}{{c_value_att}}{{c_size_att}} />""" )
+
+			%editor_write_as_HTML_end
+		end
+	end
+
+	creator create kind:in_all end
+
+end

@@ -1,0 +1,208 @@
+service form_UI_item_utilities
+
+	command get_display_form_UI_item_map_for_object
+		in object type:any_type end
+		in include_readonly_attributes type:yes_no end
+
+		out result type:display_form_UI_item_map end
+		
+		script
+			const mutable_display_form_UI_item_map form_item_map = fa_mutable_display_form_UI_item_map.create
+
+			const type_attribute_list type_attribute_list = se_reflection.get_attribute_list_of_object ( &
+				object = i_object &
+				include_readonly_attributes = i_include_readonly_attributes &
+				include_inherited_attributes = yes )
+
+			repeat for each type_attribute type_attribute in c_type_attribute_list
+				const any_type attribute_value = se_reflection.get_attribute_value_of_object.result ( &
+					object = i_object &
+					attribute_id = c_type_attribute.id )
+				const display_form_UI_item form_item = get_display_form_UI_item_for_type ( &
+					type = se_reflection.type_of_object_type ( c_type_attribute.object_type ) &
+					form_item_id = c_type_attribute.id.suffix &
+					form_item_value = c_attribute_value )
+				c_form_item_map.add ( &
+					key = c_form_item.id &
+					item = c_form_item )
+			end repeat
+			
+			o_result = c_form_item_map.make_immutable
+		end
+	end
+
+	command get_edit_form_UI_item_map_for_object
+		in object type:any_type end
+		in include_readonly_attributes type:yes_no end
+
+		out result type:form_UI_item_map end
+		
+		script
+			const mutable_form_UI_item_map form_item_map = fa_mutable_form_UI_item_map.create
+
+			const type_attribute_list type_attribute_list = se_reflection.get_attribute_list_of_object ( &
+				object = i_object &
+				include_readonly_attributes = i_include_readonly_attributes &
+				include_inherited_attributes = yes )
+
+			repeat for each type_attribute type_attribute in c_type_attribute_list
+				const any_type attribute_value = se_reflection.get_attribute_value_of_object.result ( &
+					object = i_object &
+					attribute_id = c_type_attribute.id )
+
+				var form_UI_item form_item
+				// TD doesn't work because 'value_is_public_setable' uses '=r' (and not '=v')
+				// if c_type_attribute.value_is_public_setable then
+				if c_type_attribute.kind =v ty_attribute_kind.variable and c_type_attribute.setable =v ty_attribute_setable.all
+					v_form_item = get_edit_form_UI_item_for_type ( &
+						object_type = c_type_attribute.object_type &
+						form_item_id = c_type_attribute.id.suffix &
+						form_item_default_value = c_attribute_value &
+						form_item_void_allowed = c_type_attribute.voidable )
+				else
+					v_form_item = get_display_form_UI_item_for_type ( &
+						type = se_reflection.type_of_object_type ( c_type_attribute.object_type ) &
+						form_item_id = c_type_attribute.id.suffix &
+						form_item_value = c_attribute_value )
+				end if
+
+				c_form_item_map.add ( &
+					key = v_form_item.id &
+					item = v_form_item )
+			end repeat
+			
+			o_result = c_form_item_map.make_immutable
+		end
+	end
+
+	command get_display_form_UI_item_for_type
+		in type type:type end
+		in form_item_id type:simple_non_empty_string end
+		in form_item_value type:any_type voidable:yes end
+	
+		out result type:display_form_UI_item end
+		
+		script
+			const UI_field_kind.enumerated UI_field_kind = se_UI_field_kind_utilities.get_UI_field_kind_for_type ( i_type )
+
+			if c_UI_field_kind =r ty_UI_field_kind.single_line_text then
+				o_result = fa_single_line_text_display.create ( &
+					id = i_form_item_id &
+					value = i_form_item_value )
+
+			else if c_UI_field_kind =r ty_UI_field_kind.multi_line_text then
+				o_result = fa_multi_line_text_display.create ( &
+					id = i_form_item_id &
+					value = i_form_item_value )
+			
+			else if c_UI_field_kind =r ty_UI_field_kind.integer_number then
+				o_result = fa_integer_number_display.create ( &
+					id = i_form_item_id &
+					value = i_form_item_value )
+			
+			else if c_UI_field_kind =r ty_UI_field_kind.yes_no_value then
+				o_result = fa_yes_no_display.create ( &
+					id = i_form_item_id &
+					value = i_form_item_value )
+			
+			else if c_UI_field_kind =r ty_UI_field_kind.local_date_time then
+				o_result = fa_local_date_time_display.create ( &
+					id = i_form_item_id &
+					value = i_form_item_value )
+					
+			else
+				error """UI kind '{{c_UI_field_kind}}' not yet supported"""
+			end if
+		end
+	end
+
+	command get_edit_form_UI_item_for_type
+		in object_type type:object_type end
+		in form_item_id type:simple_non_empty_string end
+		in form_item_default_value type:any_type voidable:yes default:void end
+		in form_item_default_value_getter type:any_type_object_getter voidable:yes default:void end
+		in form_item_void_allowed type:yes_no end
+	
+		out result type:edit_form_UI_item end
+		
+		script
+			// define allowed values of enumerated type
+			var indexed_string_list allowed_values = void
+			const type enumerated_type = se_reflection.underlying_enumerated_type_of_object_type ( i_object_type )
+			if c_enumerated_type #r void then
+				const mutable_indexed_string_list mutable_allowed_values = fa_mutable_indexed_string_list.create
+				repeat for each enumerated enumerated in c_enumerated_type.enumerated_list
+					c_mutable_allowed_values.append ( c_enumerated.to_string )
+				end repeat
+				v_allowed_values = c_mutable_allowed_values.make_immutable
+			end if
+
+			const type type = se_reflection.type_of_object_type ( i_object_type )
+			const UI_field_kind.enumerated UI_field_kind = se_UI_field_kind_utilities.get_UI_field_kind_for_type ( c_type )
+
+			if c_UI_field_kind =r ty_UI_field_kind.single_line_text then
+				o_result = fa_single_line_text_editor.create ( &
+					id = i_form_item_id &
+					default_value = i_form_item_default_value &
+					default_value_getter = i_form_item_default_value_getter &
+					void_allowed = i_form_item_void_allowed &
+					allowed_values_list = v_allowed_values )
+
+			else if c_UI_field_kind =r ty_UI_field_kind.multi_line_text then
+				o_result = fa_multi_line_text_editor.create ( &
+					id = i_form_item_id &
+					default_value = i_form_item_default_value &
+					default_value_getter = i_form_item_default_value_getter &
+					void_allowed = i_form_item_void_allowed &
+					allowed_values_list = v_allowed_values )
+			
+			else if c_UI_field_kind =r ty_UI_field_kind.integer_number then
+				o_result = fa_integer_number_editor.create ( &
+					id = i_form_item_id &
+					default_value = i_form_item_default_value &
+					default_value_getter = i_form_item_default_value_getter &
+					void_allowed = i_form_item_void_allowed &
+					allowed_values_list = v_allowed_values )
+			
+			else if c_UI_field_kind =r ty_UI_field_kind.yes_no_value then
+				o_result = fa_yes_no_editor.create ( &
+					id = i_form_item_id &
+					default_value = i_form_item_default_value &
+					default_value_getter = i_form_item_default_value_getter &
+					void_allowed = i_form_item_void_allowed &
+					allowed_values_list = v_allowed_values )
+			
+			else if c_UI_field_kind =r ty_UI_field_kind.local_date_time then
+				o_result = fa_local_date_time_editor.create ( &
+					id = i_form_item_id &
+					default_value = i_form_item_default_value &
+					default_value_getter = i_form_item_default_value_getter &
+					void_allowed = i_form_item_void_allowed &
+					allowed_values_list = v_allowed_values )
+					
+			else
+				error """UI kind '{{c_UI_field_kind}}' not yet supported"""
+			end if
+		end
+	end
+	
+	command get_HTML_size_attribute
+		in specific_value type:positive32 voidable:yes end
+		in default_value type:positive32 voidable:yes end
+
+		out result type:string end
+		
+		script
+			const positive32 size = &
+				iif i_specific_value #r void &
+				then i_specific_value &
+				else i_default_value end if
+
+			o_result = &
+				iif c_size #r void &
+				then """ size="{{c_size.to_string}}"""" &
+				else se_string_constants.empty_string end if
+		end
+	end
+
+end

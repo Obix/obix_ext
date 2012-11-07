@@ -1,0 +1,17 @@
+type day_of_year
+
+	inherit simple_positive32
+		attribute value and_check:i_value <= se_date.days_in_leap_year.value end
+	end
+
+/// TD
+
+	inherit !comparable<other:day_of_year> end
+
+	attribute_list kind:readonly_constant
+		attribute is_first_day_of_year type:yes_no end
+	end attribute_list
+
+end ///
+
+end type

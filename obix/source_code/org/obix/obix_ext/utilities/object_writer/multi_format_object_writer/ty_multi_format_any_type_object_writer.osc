@@ -1,0 +1,17 @@
+type multi_format_any_type_object_writer
+
+	attribute object_writer_list type:!gt_map<key_type:non_empty_string; item_type:any_type_object_writer> end
+	
+	command supports_format
+		in format_name type:non_empty_string end
+		
+		out result type:yes_no end
+	end
+
+	command write_object
+		in object type:any_type voidable:yes end
+		in writer type:simple_string_writer end
+		in format_name type:non_empty_string check: i_object_.supports_format ( i_format_name ) end
+	end
+	
+end

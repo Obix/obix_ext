@@ -1,0 +1,20 @@
+factory yes_no_editor type:edit_form_UI_item
+
+	command write_as_HTML
+		script
+			%editor_write_as_HTML_start
+
+			const string checked_att = &
+				iif c_default_value #r void and c_default_value.to_string =v se_yes_no_constants.yes_as_string &
+				then """ checked="checked"""" &
+				else " " end if
+
+			i_writer.write ( """<input type="checkbox"{{c_id_att}}{{c_name_att}}{{c_title_att}}{{c_tabindex_att}}{{c_accesskey_att}}{{c_placeholder_att}}{{c_class_att}}{{c_checked_att}} />""" )
+
+			%editor_write_as_HTML_end
+		end
+	end
+
+	creator create kind:in_all end
+
+end

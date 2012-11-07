@@ -1,0 +1,18 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service HTTP_status_code
+
+	attribute_list type:HTTP_status_code
+		// TD2 add others from RFC 2616
+		attribute OK_200 default: fa_HTTP_status_code.create ( 200.value ) end
+		attribute redirection_300 default: fa_HTTP_status_code.create ( 300.value ) end
+		attribute bad_request_400 default: fa_HTTP_status_code.create ( 400.value ) end
+		attribute internal_server_error_500 default: fa_HTTP_status_code.create ( 500.value ) end
+	end
+
+end

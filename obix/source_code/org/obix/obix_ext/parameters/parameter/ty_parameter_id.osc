@@ -1,0 +1,7 @@
+type parameter_id
+
+	inherit simple_non_empty_string end
+	
+	inherit !equalable<other:parameter_id> end
+
+end

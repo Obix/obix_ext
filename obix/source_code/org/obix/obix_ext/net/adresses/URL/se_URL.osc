@@ -1,0 +1,41 @@
+service URL
+
+	java_header
+		import java.net.URL;
+		import java.net.MalformedURLException;
+		
+		import org.obix.obix_core.java.fa_java_exception;
+	end java_header
+
+	attribute string_to_URL_converter type:string_to_URL_converter default: fa_string_to_URL_converter.create end
+
+	command check_valid_URL
+		in string_value type:string_value end
+		
+		%error_output_argument < invalid_URL_error >
+		
+		script
+			var java_exception java_exception
+			var string message
+
+			java
+				try {
+					URL URL = new URL ( i_string_value.java_value() );
+				}
+				catch ( MalformedURLException e ) {
+					v_java_exception = new fa_java_exception ( e );
+					v_message = new fa_string ( e.getMessage() );
+				}
+			end java
+			
+			if v_java_exception #r void then
+				o_error = fa_invalid_URL_error.create ( &
+					description = """'{{i_string_value.to_string}}' is not a valid URL. Reason:
+{{v_message}}""" &
+					java_exception = v_java_exception &
+					data = i_string_value.to_string )
+			end if
+		end
+	end
+	
+end service

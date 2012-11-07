@@ -1,0 +1,149 @@
+service HSQLDB_utilities
+
+	java_header
+		import java.lang.reflect.Method;
+		import java.util.List;
+		import java.util.ArrayList;
+	end java_header
+
+	attribute HSQLDB_database_manager_GUI_class_name type:string default:"org.hsqldb.util.DatabaseManagerSwing" end
+	attribute HSQLDB_class_path type:string default:"lib/hsqldb.jar;lib/sqltool.jar" end
+
+	command check_database_manager_GUI_available
+
+		%system_error_output_argument
+
+		script
+			var yes_no class_exists = yes
+			java
+				try {
+					Class.forName ( a_HSQLDB_database_manager_GUI_class_name.java_value() );
+				} catch ( ClassNotFoundException e ) {
+					v_class_exists = fa_yes_no.a_no;
+				}
+			end java
+
+			if not v_class_exists then
+				o_error = fa_system_error.create ( description = """The HSQLDB database manager GUI is not available. (Class '{{a_HSQLDB_database_manager_GUI_class_name}}' could not be found. Please check the .jar files installed.)""" )
+			end if
+		end
+	end
+
+	command start_database_manager_GUI_in_same_process
+		in driver type:non_empty_string voidable:yes default:void end
+		in url type:non_empty_string voidable:yes default:void end
+		in user type:non_empty_string voidable:yes default:void end
+		in password type:non_empty_string voidable:yes default:void end
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output<string>
+
+		script
+			o_error = check_database_manager_GUI_available
+			if o_error #r void then
+				i_error_handler.handle_system_error ( o_error )
+				exit script
+			end if
+
+			java
+				final String driver = i_driver != null ? i_driver.java_value() : null;
+				final String url = i_url != null ? i_url.java_value() : null;
+				final String user = i_user != null ? i_user.java_value() : null;
+				final String password = i_password != null ? i_password.java_value() : null;
+
+				Thread thread = new Thread() {
+					@SuppressWarnings("unchecked")
+					public void run() {
+
+						List<String> options = new ArrayList<String>();
+						if ( driver != null ) {
+							options.add ( "-driver" );
+							options.add ( driver );
+						}
+						if ( url != null ) {
+							options.add ( "-url" );
+							options.add ( url );
+						}
+						if ( user != null ) {
+							options.add ( "-user" );
+							options.add ( user );
+						}
+						if ( password != null ) {
+							options.add ( "-password" );
+							options.add ( password );
+						}
+						String[] options_array = new String [ options.size() ];
+						options.toArray( options_array );
+
+						try {
+							Class clazz = Class.forName ( a_HSQLDB_database_manager_GUI_class_name.java_value() );
+							Method method = clazz.getMethod ( "main", new Class[]{String[].class} );
+							method.invoke ( null, new Object[]{ options_array } );
+						} catch ( Exception e ) {
+							e.printStackTrace();
+						}
+					}
+				};
+				thread.start();
+			end java
+			
+			if o_error =r void then
+				o_result = '''Ok. The HSQLDB GUI manager has been started.
+Note: If you quit the HSQLDB GUI manager (close the window) then this application will also be terminated!'''
+			end if
+		end
+	end
+
+	command start_database_manager_GUI_in_new_terminal
+		in driver type:non_empty_string voidable:yes default:void end
+		in url type:non_empty_string voidable:yes default:void end
+		in user type:non_empty_string voidable:yes default:void end
+		in password type:non_empty_string voidable:yes default:void end
+		%system_error_handler_input_argument
+		
+		%result_xor_system_error_output<string>
+
+		script
+			o_error = check_database_manager_GUI_available
+			if o_error #r void then
+				i_error_handler.handle_system_error ( o_error )
+				exit script
+			end if
+			
+			const mutable_string command_line_arguments = fa_mutable_string.create
+			if i_driver #r void then
+				c_command_line_arguments.append ( " -driver " )
+				c_command_line_arguments.append ( i_driver )
+			end if
+			
+			if i_url #r void then
+				c_command_line_arguments.append ( " -url " )
+				c_command_line_arguments.append ( i_url )
+			end if
+			
+			if i_user #r void then
+				c_command_line_arguments.append ( " -user " )
+				c_command_line_arguments.append ( i_user )
+			end if
+			
+			if i_password #r void then
+				c_command_line_arguments.append ( " -password " )
+				c_command_line_arguments.append ( i_password )
+			end if
+			
+			o_error = se_java_utilities.start_java_application_class_in_new_terminal_and_continue ( &
+				classpath = a_HSQLDB_class_path &
+				main_class = a_HSQLDB_database_manager_GUI_class_name &
+				window_title = "HSQLDB database manager" &
+				error_handler = i_error_handler )
+				
+			if o_error =r void then
+				o_result = '''Ok. The HSQLDB GUI manager has been started.
+Please note that if you are running the database in file mode or in memory mode, you can access the database only from one process at a time, due to HSQL's locking mechanism.
+In this case you must shutdown any process that uses the database before you can connect to the database with the GUI manager.
+This restriction does not apply if you use the database in server mode.'''
+			end if
+		end
+	end
+
+end

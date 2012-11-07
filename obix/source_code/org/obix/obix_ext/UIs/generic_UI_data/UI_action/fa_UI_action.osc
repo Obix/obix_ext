@@ -1,0 +1,5 @@
+factory UI_action type:UI_action
+
+	%UI_action_factory_code
+
+end

@@ -1,0 +1,346 @@
+generic factory verified_parameter_list_creator
+
+	param parameter_value_type end
+	
+	factory type:!gt_verified_parameter_list_creator<{parameter_value_type}>
+	
+		command create_verified_parameter_list
+			script
+				if i_formal_parameter_list =r void and i_unverified_parameter_list =r void then
+					exit script
+				end
+				
+				const !mutable_indexed_list<parameter_error> mutable_error_list = !mutable_indexed_list_factory<parameter_error>.create
+
+				co_check_coherence ( &
+					unverified_parameter_list = i_unverified_parameter_list &
+					formal_parameter_list = i_formal_parameter_list &
+					error_list = c_mutable_error_list &
+					error_handler = i_error_handler )
+				if not c_mutable_error_list.is_empty then
+					o_error_list = c_mutable_error_list.make_immutable
+					exit script
+				end if
+
+				const !gt_mutable_parameter_list<{parameter_value_type}> mutable_parameter_list = &
+					!gf_mutable_parameter_list<{parameter_value_type}>.create
+					
+				co_add_explicit_parameters ( &
+					mutable_parameter_list = c_mutable_parameter_list &
+					unverified_parameter_list = i_unverified_parameter_list &
+					formal_parameter_list = i_formal_parameter_list &
+					error_list = c_mutable_error_list &
+					error_handler = i_error_handler )
+					
+				co_add_default_values ( &
+					mutable_parameter_list = c_mutable_parameter_list &
+					formal_parameter_list = i_formal_parameter_list &
+					error_list = c_mutable_error_list &
+					error_handler = i_error_handler )
+				
+				if not c_mutable_error_list.is_empty then
+					o_error_list = c_mutable_error_list.make_immutable
+					exit script
+				end if
+
+				o_result = c_mutable_parameter_list.make_immutable
+				
+				if i_formal_parameter_list.validator #r void then
+					var validation_error validation_error
+					i_formal_parameter_list.validator.is_valid ( &
+						object = o_result &
+						error_handler = i_error_handler ) &
+						( v_validation_error = error )
+					if v_validation_error #r void then
+						// TD "all"
+						c_mutable_error_list.append ( fa_parameter_error.create ( &
+							description = v_validation_error.description &
+							resource = void &
+							data = o_result &
+							parameter_id = fa_parameter_id.create ( "all"~ ) &
+							parameter_value = void ) )
+						o_result = void
+						o_error_list = c_mutable_error_list.make_immutable
+						exit script
+					end if
+				end if
+			end
+		end
+		
+		command create_parameter_list_from_default_values
+			script
+				co_create_verified_parameter_list ( &
+					unverified_parameter_list = void &
+					formal_parameter_list = i_formal_parameter_list &
+					error_handler = i_error_handler ) &
+					( o_result = result &
+					o_error_list = error_list )
+			end
+		end
+		
+		command_list private:yes
+		
+			command check_coherence
+				in unverified_parameter_list type:!gt_parameter_list<{parameter_value_type}> voidable:yes end
+				in formal_parameter_list type:!gt_formal_parameter_list<{parameter_value_type}> voidable:yes end
+				in error_list type:!mutable_indexed_list<parameter_error> end
+				%system_error_handler_input_argument
+				
+				script
+					if i_formal_parameter_list =r void and i_unverified_parameter_list #r void then
+						const parameter_error error = fa_parameter_error.create ( &
+							description = "Input arguments must be void because there are no formal input parameters specified." &
+							resource = void &
+							data = i_unverified_parameter_list &
+							parameter_id = void &
+							parameter_value = void )
+						i_error_list.append ( c_error )
+						i_error_handler.handle_system_error ( c_error )		
+						exit script
+					end if
+					
+					if i_formal_parameter_list #r void and i_formal_parameter_list.has_required_parameters and i_unverified_parameter_list =r void then
+						const parameter_error error = fa_parameter_error.create ( &
+							description = "Input parameters are required." &
+							resource = void &
+							data = i_formal_parameter_list &
+							parameter_id = void &
+							parameter_value = void )
+						i_error_list.append ( c_error )
+						i_error_handler.handle_system_error ( c_error )		
+						exit script
+					end if
+				end
+			end
+			
+			command add_explicit_parameters
+				in mutable_parameter_list type:!gt_mutable_parameter_list<{parameter_value_type}> end
+				in unverified_parameter_list type:!gt_parameter_list<{parameter_value_type}> voidable:yes end
+				in formal_parameter_list type:!gt_formal_parameter_list<{parameter_value_type}> voidable:yes end
+				in error_list type:!mutable_indexed_list<parameter_error> end
+				%system_error_handler_input_argument
+				
+				script
+					if i_unverified_parameter_list =r void then
+						exit script
+					end
+
+					repeat for each !gt_parameter<*> parameter in i_unverified_parameter_list
+					
+						var parameter_id parameter_id = c_parameter.id
+
+						// if there is exactly one formal parameter, then the parameter's id can be omitted on the command line (i.e. "v" instead of "p:v")
+						// if the parameter's id is omitted on the command line, then it must be set to se_parameter_constants.unknown_parameter_id
+						if v_parameter_id =r se_parameter_constants.unknown_parameter_id and i_formal_parameter_list.item_count =v 1 then
+							v_parameter_id = i_formal_parameter_list.item_iterator.next.id
+						end if
+						
+						var parameter_error error
+
+						// check if formal parameter exists
+						if not i_formal_parameter_list.contains_formal_parameter ( v_parameter_id ) then
+							v_error = fa_parameter_error.create ( &
+								description = "Parameter '" & v_parameter_id & "' doesn't exist." &
+								resource = void &
+								data = c_parameter &
+								parameter_id = v_parameter_id &
+								parameter_value = c_parameter.value )
+							i_error_list.append ( v_error )
+							i_error_handler.handle_system_error ( v_error )
+							next repeat
+						end if
+						
+						// const !gt_formal_parameter<{parameter_value_type}> formal_parameter = i_formal_parameter_list.require_formal_parameter ( v_parameter_id )
+						const !gt_formal_parameter<*> formal_parameter = i_formal_parameter_list.require_formal_parameter ( v_parameter_id )
+
+						// check if parameter doesn't exist already
+						if i_mutable_parameter_list.contains_parameter ( c_formal_parameter.id ) then
+							v_error = fa_parameter_error.create ( &
+								description = "Parameter '" & v_parameter_id & "' cannot be defined more than once." &
+								resource = void &
+								data = c_parameter &
+								parameter_id = v_parameter_id &
+								parameter_value = c_parameter.value )
+							i_error_list.append ( v_error )
+							i_error_handler.handle_system_error ( v_error )
+							next repeat
+						end if
+						
+						// create and add parameter
+						var !gt_parameter<{parameter_value_type}> typed_parameter
+						
+						case type of c_formal_parameter
+							when !gt_string_input_formal_parameter<*> string_input_formal_parameter then
+
+								var string string_input_value
+								if c_parameter.value =r void then
+									v_string_input_value = void
+								else
+									case type of c_parameter.value
+										when string string_value then
+											v_string_input_value = c_string_value
+										otherwise
+											v_error = fa_parameter_error.create ( &
+												description = """'{{c_parameter.value.to_string}}' is invalid for parameter '{{v_parameter_id}}'. The value must be a string, and not an object of type '{{se_reflection.type_id_path_of_object ( c_parameter.value)}}'.""" &
+												resource = void &
+												data = c_parameter &
+												parameter_id = v_parameter_id &
+												parameter_value = c_parameter.value )
+											i_error_list.append ( v_error )
+											i_error_handler.handle_system_error ( v_error )
+											next repeat
+									end case
+								end if
+										
+								c_string_input_formal_parameter.create_parameter_from_string ( &
+									value = v_string_input_value &
+									error_handler = i_error_handler ) &
+									( v_typed_parameter = o_result &
+									v_error = o_error )
+								if v_error #r void then
+									i_error_list.append ( v_error )
+									i_error_handler.handle_system_error ( v_error )
+									next repeat
+								end if
+
+							when !gt_indexed_string_list_input_formal_parameter<*> indexed_string_list_input_formal_parameter then
+
+								var indexed_string_list input_value
+								case type of c_parameter.value
+									when indexed_string_list indexed_string_list then
+										v_input_value = c_indexed_string_list
+									when string string_value then
+										v_input_value = fa_indexed_string_list.create_singleton ( c_string_value )
+									otherwise
+										v_error = fa_parameter_error.create ( &
+											description = "The input for parameter '" & v_parameter_id & "' must be a single string or a list of strings." &
+											resource = void &
+											data = c_parameter &
+											parameter_id = v_parameter_id &
+											parameter_value = c_parameter.value )
+										i_error_list.append ( v_error )
+										i_error_handler.handle_system_error ( v_error )
+										next repeat
+								end case
+										
+								c_indexed_string_list_input_formal_parameter.create_parameter_from_string_list ( &
+									value = v_input_value &
+									error_handler = i_error_handler ) &
+									( v_typed_parameter = o_result &
+									v_error = o_error )
+								if v_error #r void then
+									i_error_list.append ( v_error )
+									i_error_handler.handle_system_error ( v_error )
+									next repeat
+								end if
+
+							when string_formal_parameter string_formal_parameter then
+								var string string_input_value
+								if c_parameter.value =r void then
+									v_string_input_value = void
+								else
+									case type of c_parameter.value
+										when string string then
+											v_string_input_value = c_string
+										otherwise
+											v_error = fa_parameter_error.create ( &
+												description = """'{{c_parameter.value.to_string}}' is invalid for parameter '{{v_parameter_id}}'. The value must be a string, and not an object of type '{{se_reflection.type_id_path_of_object ( c_parameter.value)}}'.""" &
+												resource = void &
+												data = c_parameter &
+												parameter_id = v_parameter_id &
+												parameter_value = c_parameter.value )
+											i_error_list.append ( v_error )
+											i_error_handler.handle_system_error ( v_error )
+											next repeat
+									end case
+								end if
+
+								c_string_formal_parameter.create_parameter ( &
+									value = v_string_input_value &
+									error_handler = i_error_handler ) &
+									( v_typed_parameter = o_result &
+									v_error = o_error )
+								if v_error #r void then
+									i_error_list.append ( v_error )
+									i_error_handler.handle_system_error ( v_error )
+									next repeat
+								end if
+								
+							when any_type_formal_parameter any_type_formal_parameter then
+								var any_type_parameter any_type_parameter
+								c_any_type_formal_parameter.create_parameter ( &
+									value = c_parameter.value &
+									error_handler = i_error_handler ) &
+									( v_any_type_parameter = o_result &
+									v_error = o_error )
+								if v_error #r void then
+									i_error_list.append ( v_error )
+									i_error_handler.handle_system_error ( v_error )
+									next repeat
+								end if
+								
+								v_typed_parameter = v_any_type_parameter type_check:no
+
+							otherwise
+								error """Unsupported type '{{se_reflection.type_id_path_of_object ( c_formal_parameter)}}' for formal parameter '{{c_formal_parameter.id}}')"""
+						end case
+						
+						i_mutable_parameter_list.add ( v_typed_parameter )
+
+					end repeat
+				end
+			end
+			
+			command add_default_values
+				in mutable_parameter_list type:!gt_mutable_parameter_list<{parameter_value_type}> end
+				in formal_parameter_list type:!gt_formal_parameter_list<{parameter_value_type}> voidable:yes end
+				in error_list type:!mutable_indexed_list<parameter_error> end
+				%system_error_handler_input_argument
+				
+				script
+					repeat for each !gt_formal_parameter<{parameter_value_type}> formal_parameter in i_formal_parameter_list
+
+						if i_mutable_parameter_list.contains_parameter ( c_formal_parameter.id ) or &
+							c_formal_parameter.alternative_id #r void and i_mutable_parameter_list.contains_parameter ( c_formal_parameter.alternative_id ) then
+							// value is explicitly defined
+							next repeat
+						end if
+						
+						var parameter_error error
+						
+						if c_formal_parameter.default_value_getter =r void then
+							v_error = fa_parameter_error.create ( &
+								description = "Parameter '" & c_formal_parameter.id & "' is required." &
+								resource = void &
+								data = c_formal_parameter &
+								parameter_id = c_formal_parameter.id &
+								parameter_value = void )
+							i_error_list.append ( v_error )
+							i_error_handler.handle_system_error ( v_error )
+							next repeat
+						end if
+						
+						// create parameter with default value
+						var !gt_parameter<{parameter_value_type}> default_value_parameter
+						c_formal_parameter.create_default_value_parameter ( &
+							error_handler = i_error_handler ) &
+							( v_default_value_parameter = result &
+							v_error = error )
+						if v_error =r void then
+							i_mutable_parameter_list.add ( v_default_value_parameter )
+						else
+							i_error_list.append ( v_error )
+						end if
+
+					end repeat
+				end
+			end
+		
+		end command_list
+		
+
+		creator create kind:in_all end
+
+	end
+		
+end

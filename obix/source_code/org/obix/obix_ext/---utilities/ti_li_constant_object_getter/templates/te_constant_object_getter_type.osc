@@ -1,0 +1,11 @@
+template constant_object_getter_type
+
+	param object_type_suffix end
+	
+	type {object_type_suffix}_constant_object_getter
+	
+		!gt_constant_object_getter<{object_type_suffix}>
+
+	end
+	
+end

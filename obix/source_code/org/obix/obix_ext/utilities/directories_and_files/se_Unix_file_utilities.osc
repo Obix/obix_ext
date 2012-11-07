@@ -1,0 +1,44 @@
+service Unix_file_utilities
+
+	command set_executable_permission_for_files_in_directory
+		%existing_directory_input_argument
+		in include_child_directories type:yes_no end
+		in executable_permission type:yes_no end
+		in permission_only_for_owner type:yes_no end
+		in filter type:file_filter voidable:yes default:void end
+		%system_error_handler_input_argument
+
+		%error_output_argument < directory_or_file_error >
+
+		script
+			var file_list file_list
+			i_directory.file_list ( &
+				filter = i_filter &
+				sort_by_path = no &
+				include_child_directories = i_include_child_directories &
+				error_handler = i_error_handler ) &
+				( v_file_list = result &
+				o_error = error )
+			if o_error #r void then
+				exit script
+			end if
+
+			repeat for each file file in v_file_list
+				if i_filter #r void then
+					if not i_filter.is_accepted ( c_file ) then
+						next repeat
+					end if
+				end if
+				
+				o_error = c_file.set_Unix_executable_permission ( &
+					executable_permission = i_executable_permission &
+					only_for_owner = i_permission_only_for_owner &
+					error_handler = i_error_handler )
+				if o_error #r void then
+					exit script
+				end if
+			end
+		end
+	end
+
+end

@@ -1,0 +1,42 @@
+factory console_string_writer type:simple_string_writer
+
+	command write
+		script
+			se_system.console.write ( i_string )
+		end
+	end
+
+	command write_line
+		script
+			se_system.console.write_line ( i_string )
+		end
+	end
+
+	command write_new_line
+		script
+			se_system.console.write_new_line
+		end
+	end
+	
+	command close
+		script
+			// do nothing
+		end
+	end
+
+	command flush
+		script
+			// do nothing
+		end
+	end
+
+	creator create
+		in_check check: se_system.console #r void end
+		
+		out result type:simple_string_writer end
+		
+		script
+		end
+	end
+
+end factory

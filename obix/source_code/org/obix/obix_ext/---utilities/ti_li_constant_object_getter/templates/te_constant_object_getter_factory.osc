@@ -1,0 +1,11 @@
+template constant_object_getter_factory
+
+	param object_type_suffix end
+	
+	factory {object_type_suffix}_constant_object_getter type:{object_type_suffix}_constant_object_getter
+	
+		!gf_constant_object_getter<{object_type_suffix}>
+
+	end
+	
+end

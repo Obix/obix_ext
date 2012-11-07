@@ -1,0 +1,8 @@
+type URL_resource_error
+
+	inherit resource_failure_error
+		attribute a_id default:"URL_error" end
+		attribute a_resource type:URL end
+	end
+
+end

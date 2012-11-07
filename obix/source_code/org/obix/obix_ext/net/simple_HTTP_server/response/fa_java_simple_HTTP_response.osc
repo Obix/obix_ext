@@ -1,0 +1,130 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory java_simple_HTTP_response type:simple_HTTP_response
+
+	java_header
+		import java.io.PrintWriter;
+		import java.io.File;
+		import java.io.FileInputStream;
+		import java.io.BufferedInputStream;
+		import java.io.OutputStream;
+
+		import com.sun.net.httpserver.HttpExchange; 
+		import com.sun.net.httpserver.Headers;
+		
+		import org.obix.obix_ext.IO.string_writer.fa_java_PrintWriter_string_writer;
+		import org.obix.obix_core.java.fa_java_exception;
+		import org.obix.obix_core.java.se_java_IO;
+	end java_header
+
+	java
+		private HttpExchange a_java_value;
+
+		public fa_java_simple_HTTP_response ( HttpExchange i_exchange ) {
+			a_java_value = i_exchange;
+			a_private_is_initialized = fa_yes_no.a_no;
+		}
+	end java
+	
+	attribute private_is_initialized type:yes_no default:no private:yes kind:variable end
+	
+	attribute cached_string_response_writer type:simple_string_writer voidable:yes private:yes kind:variable end
+
+	attribute is_initialized
+		get
+			script
+				o_is_initialized = a_private_is_initialized
+			end
+		end
+	end
+	
+	command initialize
+		script
+			// store Obix headers into Java headers
+			java
+				Headers headers = a_java_value.getResponseHeaders();
+			end java
+			repeat for each key string key in i_header_values
+				const string value = i_header_values.require_item ( c_key )
+				java
+					headers.add ( c_key.getValue().java_value(), c_value.getValue().java_value() );
+				end java
+			end
+
+			// define java_response_length
+			var signed_integer32 java_response_length
+			if i_content_length =r void then
+				v_java_response_length = 0
+			else if i_content_length =v 0 then
+				v_java_response_length = -1
+			else
+				v_java_response_length = i_content_length
+			end if
+
+			java
+				a_java_value.sendResponseHeaders ( i_status.getValue().java_value(), v_java_response_length.getValue().java_value() );
+			end java
+		
+			a_private_is_initialized = yes
+		end
+	end
+
+	command get_string_response_writer
+		script
+			if a_cached_string_response_writer =r void then
+				java
+					a_cached_string_response_writer = new fa_java_PrintWriter_string_writer ( new PrintWriter ( a_java_value.getResponseBody() ) );
+				end java
+			end if
+			
+			o_result = a_cached_string_response_writer
+		end
+	end
+
+	command send_file
+		script
+			var java_exception java_exception = void
+			
+			java
+				Headers headers = a_java_value.getResponseHeaders();
+				headers.add("Content-Type", i_content_type.getValue().java_value());
+
+				File file = new File ( i_file.getValue().java_value() );
+				a_java_value.sendResponseHeaders ( 200, file.length() );
+				
+				BufferedInputStream input_stream = null;
+				OutputStream output_stream = null;
+				try {
+					input_stream = new BufferedInputStream ( new FileInputStream(file) );
+					output_stream = a_java_value.getResponseBody();
+					byte[] buffer = new byte[se_java_IO.default_IO_buffer_size];
+					int bytes_read;  
+					while ( (bytes_read = input_stream.read(buffer)) != -1 ) {
+						output_stream.write ( buffer, 0, bytes_read );
+					}
+
+				} catch ( Exception e ) {
+					v_java_exception = new fa_java_exception ( e );
+
+				} finally {
+					se_java_IO.close_input_stream ( input_stream );
+					se_java_IO.close_output_stream ( output_stream );
+				}
+			end java
+			
+			if v_java_exception #r void then
+				o_error = fa_resource_error.create ( &
+					description = """File file '{{i_file.to_current_OS_path}}' could not be sent. The following error occured:
+{{v_java_exception.message}}.""" &
+					java_exception = v_java_exception &
+					resource = i_file )
+				i_error_handler.handle_system_error ( o_error )
+			end if
+		end
+	end
+end

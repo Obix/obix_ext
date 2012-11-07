@@ -1,0 +1,12 @@
+type JSON_parser
+
+	command parse
+		in string type:simple_string end
+		%system_error_handler_input_argument
+		
+		%result_xor_error_output < &
+			result_type: JSON_object &
+			error_type: JSON_parsing_error >
+	end
+
+end

@@ -1,0 +1,19 @@
+type generic_UI
+
+	// attribute a_id type:simple_non_empty_string end
+	
+	command write_as_HTML
+		in writer type:simple_string_writer end
+	end
+	
+	/// TD
+	command write_as_JSON
+		in writer type:simple_string_writer end
+	end
+	
+	command write_as_XML
+		in writer type:simple_string_writer end
+	end
+	end ///
+
+end

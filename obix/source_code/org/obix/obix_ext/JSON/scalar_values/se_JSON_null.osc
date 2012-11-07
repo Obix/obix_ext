@@ -1,0 +1,5 @@
+service JSON_null
+
+	attribute shared_value type:JSON_null default:fa_JSON_null.create end
+
+end

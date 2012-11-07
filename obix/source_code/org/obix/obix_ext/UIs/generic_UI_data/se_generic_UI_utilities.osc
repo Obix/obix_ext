@@ -1,0 +1,31 @@
+service generic_UI_utilities
+
+	// TD type:positive64
+	// attribute unique_id type:positive32 default:1 private:yes kind:variable end
+
+	attribute default_result_div type:non_empty_string default:"result_div" end
+
+	command convert_id_to_label
+		in i_id type:simple_non_empty_string end
+		
+		out result type:non_empty_string end
+		
+		script
+			o_result = i_id.to_string.to_first_upper_case.replace_all ( &
+				to_replace = se_string_constants.underline &
+				replace_by = se_string_constants.space ).to_non_empty_string
+		end
+	end
+	
+	///
+	command get_unique_id
+		out result type:non_empty_string end
+		
+		script
+			o_result = "id_" & a_unique_id.to_string
+			a_unique_id = a_unique_id + 1
+		end
+	end
+	end ///
+	
+end

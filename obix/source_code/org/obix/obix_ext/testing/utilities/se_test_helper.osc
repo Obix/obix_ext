@@ -1,0 +1,79 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service test_helper
+
+	attribute_list type:test_object
+
+		attribute test_object_void default: fa_test_object.create end
+
+		attribute test_object_scalars default: fa_test_object.create ( &
+			string_attribute = "This is a string" &
+			positive32_attribute = 1 &
+			yes_no_attribute = yes &
+			character_attribute = 'A' &
+			object_attribute = void &
+			list_attribute = void ) end
+
+		attribute test_object_no_list default: fa_test_object.create ( &
+			string_attribute = "This is string 2" &
+			positive32_attribute = 1234567890 &
+			yes_no_attribute = no &
+			character_attribute = 'b' &
+			object_attribute = test_object_scalars &
+			list_attribute = void ) end
+
+	end	attribute_list
+			
+	attribute test_list type:!mutable_indexed_list<test_object>
+		default
+			script
+				o_test_list = !mutable_indexed_list_factory<test_object>.create
+				o_test_list.append ( a_test_object_void )
+				o_test_list.append ( a_test_object_scalars )
+				o_test_list.append ( a_test_object_no_list )
+			end
+		end
+	end
+
+	attribute_list type:test_object
+
+		attribute test_object default: fa_test_object.create ( &
+			string_attribute = "This is string 3" &
+			positive32_attribute = 100 &
+			yes_no_attribute = yes &
+			character_attribute = '%' &
+			object_attribute = test_object_no_list &
+			list_attribute = test_list ) end
+
+	end	attribute_list
+			
+	attribute test_list_2 type:!mutable_indexed_list<any_type>
+		default
+			script
+				o_test_list_2 = !mutable_indexed_list_factory<any_type>.create
+				o_test_list_2.append ( a_test_object_void )
+				o_test_list_2.append ( a_test_object_scalars )
+				o_test_list_2.append ( a_test_object_no_list )
+				o_test_list_2.append ( a_test_object )
+			end
+		end
+	end
+
+	attribute_list type:test_object
+
+		attribute test_object_complex default: fa_test_object.create ( &
+			string_attribute = "This is a string 4" &
+			positive32_attribute = 999 &
+			yes_no_attribute = no &
+			character_attribute = 'z' &
+			object_attribute = a_test_object &
+			list_attribute = test_list_2 ) end
+
+	end	attribute_list
+
+end service

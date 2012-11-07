@@ -1,0 +1,376 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+service URI_utilities
+
+	java_header
+		import java.io.UnsupportedEncodingException;
+		
+		import java.net.URLDecoder;
+		import java.net.URLEncoder;
+		import java.net.URI;
+		import java.net.URISyntaxException;
+
+		import org.obix.obix_core.java.fa_java_exception;
+	end java_header
+
+	attribute string_to_URI_converter type:string_to_URI_converter default: fa_string_to_URI_converter.create end
+	
+	command check_if_valid_URI
+		in string type:simple_string end
+		
+		%error_output_argument < invalid_URI_error >
+		
+		script
+			var java_exception java_exception
+
+			java
+				try {
+					URI URI = new URI ( i_string.getValue().java_value() );
+				}
+				catch ( URISyntaxException e ) {
+					v_java_exception = new fa_java_exception ( e );
+				}
+			end java
+			
+			if v_java_exception #r void then
+				o_error = fa_invalid_URI_error.create ( &
+					description = """'{{i_string}}' is not a valid URI. Reason:
+{{v_java_exception.message}}""" &
+					java_exception = v_java_exception &
+					data = i_string )
+			end if
+		end
+	end
+
+	command encode_string
+		in string type:simple_string end
+		%supported_character_set_input_argument
+		in convert_space_to_plus type:yes_no default:no end
+
+		out result type:string end
+		
+		script
+			java
+				String result = URLEncoder.encode ( i_string.getValue().java_value(), i_character_set.getValue().java_value() );
+
+				if ( ! i_convert_space_to_plus.java_value() ) {
+					// URLEncoder converts " " to "+" and "+" to "%2B". Therefore replace "+" with "%20"
+					result = result.replaceAll ( "\\+", "%20" );
+				}
+
+				o_result = new fa_string ( result );
+			end java
+		end
+
+		test
+			script
+				test string = "<1 + 1>"
+				verify v_result compare =v "%3C1%20%2B%201%3E"
+
+				test string = "<1 + 1>"; convert_space_to_plus = yes
+				verify v_result compare =v "%3C1+%2B+1%3E"
+			end
+		end
+	end
+	
+	command decode_string
+		in string type:simple_string end
+		%supported_character_set_input_argument
+
+		out result type:string end
+		
+		script
+			java
+				o_result = new fa_string ( URLDecoder.decode ( i_string.getValue().java_value(), i_character_set.getValue().java_value() ) );
+			end java
+		end
+
+		test
+			script
+				test string = "%3C1%20%2B%201%3E"
+				verify v_result compare =v "<1 + 1>"
+
+				test string = "%3C1+%2B+1%3E"
+				verify v_result compare =v "<1 + 1>"
+			end
+		end
+	end
+
+	command unencoded_query_map_to_encoded_query_string
+		in unencoded_query_map type:string_string_map check: not i_unencoded_query_map.is_empty end
+		%supported_character_set_input_argument
+		in convert_space_to_plus type:yes_no default:no end
+
+		out result type:non_empty_string end
+		
+		script
+			const mutable_string query = fa_mutable_string.create
+			repeat for each key non_empty_string key in i_unencoded_query_map counter: counter
+
+				if c_counter > 1 then
+					c_query.append ( se_URI_constants.query_assignment_separator )
+				end if
+				
+				c_query.append ( co_encode_string ( &
+					string = c_key &
+					character_set = i_character_set &
+					convert_space_to_plus = i_convert_space_to_plus ) )
+
+				c_query.append ( se_URI_constants.query_assignment_symbol )
+
+				const string value = i_unencoded_query_map.require_item ( c_key )
+				if c_value #r void then
+					c_query.append ( co_encode_string ( &
+						string = c_value &
+						character_set = i_character_set &
+						convert_space_to_plus = i_convert_space_to_plus ) )
+				end if
+			end repeat
+
+			o_result = c_query.to_non_empty_string
+		end
+		test
+			script
+				const string_string_mutable_map map = fa_string_string_mutable_map.create
+				c_map.add ( &
+					key = "name" &
+					item = "value" )
+				test unencoded_query_map = c_map.copy_to_immutable
+				verify v_result compare =v "name=value"
+
+				c_map.add ( &
+					key = '''n + /\''' &
+					item = "v + {}" )
+				test unencoded_query_map = c_map.copy_to_immutable
+				verify v_result compare =v "name=value&n%20%2B%20%2F%5C=v%20%2B%20%7B%7D"
+
+				test unencoded_query_map = c_map.copy_to_immutable; convert_space_to_plus = yes
+				verify v_result compare =v "name=value&n+%2B+%2F%5C=v+%2B+%7B%7D"
+
+				const string_string_mutable_map map2 = fa_string_string_mutable_map.create
+				c_map2.add ( &
+					key = "name" &
+					item = void )
+				test unencoded_query_map = c_map2.copy_to_immutable
+				verify v_result compare =v "name="
+			end
+		end
+	end
+	
+	command encoded_query_string_to_unencoded_query_map
+		in encoded_query_string type:non_empty_string end
+		%supported_character_set_input_argument
+		%system_error_handler_input_argument
+
+		%result_xor_system_error_output<string_string_map>
+
+		script
+			const string_string_mutable_map mutable_result = fa_string_string_mutable_map.create
+			
+			var string error_message
+			const indexed_string_list assignment_list = i_encoded_query_string.split ( se_URI_constants.query_assignment_separator )
+			repeat for each string assignment in assignment_list
+				if c_assignment.item_count < 2 then
+					v_error_message = """'{{c_assignment}}' is invalid."""
+					exit repeat
+				end if
+				const indexed_string_list assignment_items = c_assignment.split ( se_URI_constants.query_assignment_symbol )
+				if c_assignment_items.item_count #v 2 then
+					v_error_message = """'{{c_assignment}}' is invalid because '{{se_URI_constants.query_assignment_symbol}}' is missing."""
+					exit repeat
+				end if
+				
+				const string encoded_name = c_assignment_items.first_item
+				if c_encoded_name.is_empty then
+					v_error_message = """'{{c_assignment}}' is invalid because the parameter's name is missing."""
+					exit repeat
+				end if
+
+				const non_empty_string decoded_name = co_decode_string ( &
+					string = c_encoded_name &
+					character_set = i_character_set ).to_non_empty_string
+				
+				if c_mutable_result.contains_key ( c_decoded_name ) then
+					v_error_message = """'{{c_assignment}}' is invalid because '{{c_decoded_name}}' is already defined."""
+					exit repeat
+				end if
+				
+				const string decoded_value = co_decode_string ( &
+					string = c_assignment_items.last_item &
+					character_set = i_character_set )
+				
+				c_mutable_result.add ( &
+					key = c_decoded_name &
+					item = c_decoded_value )
+			end repeat
+			
+			if v_error_message #r void then
+				o_error = fa_invalid_data_error.create ( &
+					description = """'{{i_encoded_query_string}}' is an invalid quey string. Reason:
+{{v_error_message}}""" &
+					data = i_encoded_query_string )
+				i_error_handler.handle_system_error ( o_error )
+				exit script
+			end if
+			
+			o_result = c_mutable_result.make_immutable
+		end
+		test
+			script
+				test encoded_query_string = "n1=v1&n2=v2"
+				verify v_result.item_count =v 2
+				verify v_result.get_item_if_contained ( "n1" ) compare =v "v1"
+				verify v_result.get_item_if_contained ( "n2" ) compare =v "v2"
+
+				test encoded_query_string = "@f=html&expression=1%20%2B%201"
+				verify v_result.item_count =v 2
+				verify v_result.get_item_if_contained ( "@f" ) compare =v "html"
+				verify v_result.get_item_if_contained ( "expression" ) compare =v "1 + 1"
+
+				test encoded_query_string = "p1=&p2=v2"
+				verify v_result.item_count =v 2
+				verify v_result.get_item_if_contained ( "p1" ) compare =v ""
+				verify v_result.get_item_if_contained ( "p2" ) compare =v "v2"
+
+				test encoded_query_string = "p1=%3C1%20%2B%201%3E"
+				verify v_result.item_count =v 1
+				verify v_result.get_item_if_contained ( "p1" ) compare =v "<1 + 1>"
+
+				test encoded_query_string = "p="
+				verify v_result.item_count =v 1
+				verify v_result.get_item_if_contained ( "p" ) compare =v ""
+
+				test encoded_query_string = "qwe"
+				verify v_error #r void
+
+				test encoded_query_string = "=qwe"
+				verify v_error #r void
+			end
+		end
+	end
+
+	///
+	command create_decoded_parameter_assignment_list
+		in encoded_query type:non_empty_string end
+		%supported_character_set_input_argument
+		%system_error_handler_input_argument
+
+		%result_xor_system_error_output<mutable_string_parameter_list>
+
+		script
+			o_result = fa_mutable_string_parameter_list.co_create
+			
+			var string error_message
+			const indexed_string_list assignment_list = i_encoded_query.split ( se_URI_constants.query_assignment_separator )
+			repeat for each string assignment in assignment_list
+				if c_assignment.item_count < 2 then
+					v_error_message = """'{{c_assignment}}' is invalid."""
+					exit repeat
+				end if
+				const indexed_string_list assignment_items = c_assignment.split ( "=" )
+				if c_assignment_items.item_count #v 2 then
+					v_error_message = """'{{c_assignment}}' is invalid because '=' is missing."""
+					exit repeat
+				end if
+				
+				var string name = c_assignment_items.first_item
+				if v_name.is_empty then
+					v_error_message = """'{{c_assignment}}' is invalid because the name is empty."""
+					exit repeat
+				end if
+				co_decode_string ( &
+					string = v_name &
+					character_set = i_character_set &
+					error_handler = i_error_handler ) &
+					( v_name = result &
+					o_error = error )
+				if o_error #r void then
+					v_error_message = """'{{c_assignment}}' is invalid. Reason:
+{{o_error.description}}."""
+					exit repeat
+				end if
+				var parameter_id parameter_id
+				fa_parameter_id.create_from_string ( &
+					string = v_name &
+					error_handler = i_error_handler ) &
+					( v_parameter_id = result &
+					o_error = error )
+				if o_error #r void then
+					v_error_message = """'{{v_name}}' is an invalid parameter identifier. Reason:
+{{o_error.description}}."""
+					exit repeat
+				end if
+				
+				if o_result.contains_parameter ( v_parameter_id ) then
+					v_error_message = """'{{c_assignment}}' is invalid because '{{v_parameter_id}}' is already defined."""
+					exit repeat
+				end if
+				
+				var string value = c_assignment_items.last_item
+				if not v_value.is_empty then
+					co_decode_string ( &
+						string = v_value &
+						character_set = i_character_set &
+						error_handler = i_error_handler ) &
+						( v_value = result &
+						o_error = error )
+					if o_error #r void then
+						v_error_message = """'{{c_assignment}}' is invalid. Reason:
+{{o_error.description}}."""
+						exit repeat
+					end if
+				end if
+				
+				o_result.add ( fa_string_parameter.create ( &
+					id = v_parameter_id &
+					value = v_value ) )
+			end repeat
+			
+			if v_error_message #r void then
+				o_error = fa_invalid_data_error.create ( &
+					description = """'{{i_encoded_query}}' is an invalid quey string. Reason:
+{{v_error_message}}""" &
+					data = i_encoded_query )
+				i_error_handler.handle_system_error ( o_error )
+				o_result = void
+				exit script
+			end if
+		end
+		test
+			script
+				test encoded_query = "n1=v1&n2=v2"
+				verify v_result.item_count =v 2
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "n1"~ ) ).value compare =v "v1"
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "n2"~ ) ).value compare =v "v2"
+
+				test encoded_query = "@f=html&expression=1%20%2B%201"
+				verify v_result.item_count =v 2
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "@f"~ ) ).value compare =v "html"
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "expression"~ ) ).value compare =v "1 + 1"
+
+				test encoded_query = "p1=&p2=v2"
+				verify v_result.item_count =v 2
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "p1"~ ) ).value compare =v ""
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "p2"~ ) ).value compare =v "v2"
+
+				test encoded_query = "p1=%3C1%20%2B%201%3E"
+				verify v_result.item_count =v 1
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "p1"~ ) ).value compare =v "<1 + 1>"
+
+				test encoded_query = "p="
+				verify v_result.item_count =v 1
+				verify v_result.get_parameter_if_contained ( fa_parameter_id.create ( "p"~ ) ).value compare =v ""
+
+				test encoded_query = "qwe"
+				verify v_error #r void
+			end
+		end
+	end
+	end ///
+	
+end service

@@ -1,0 +1,123 @@
+service common_javascript_code
+
+	command write_submit_form_function
+		in writer type:simple_string_writer end
+			
+		script
+			i_writer.write ( string = """
+	function submit_form ( form_element, action_element, command_path, query_constant, target, result_div, ask_confirmation ) {
+	
+		var query = query_constant == null ? "" : query_constant;
+
+		var form_elements = form_element.elements;
+		for ( var i = 0; i < form_elements.length; i++) {
+			var form_element = form_elements[i];
+			if ( form_element.disabled ) {
+				continue;
+			}
+
+			var query_value = null;
+			var tag_name = form_element.tagName;
+			if ( tag_name == "INPUT" ) {
+				var input_type = form_element.type;
+				if ( input_type == "text" ) {
+					query_value = form_element.value;
+				} else if ( input_type == "checkbox" ) {
+					query_value = form_element.checked ? "yes" : "no";
+				} else if ( input_type != "button" ) {
+					query_value = form_element.value;
+				}
+
+			} else if ( tag_name == "SELECT" ) {
+				query_value = form_element.options[form_element.selectedIndex].value;
+
+			} else if ( tag_name == "TEXTAREA" ) {
+				query_value = form_element.value;
+			}
+			if ( query_value == null ) {
+				continue;
+			}
+			
+			if ( query.length > 0 ) {
+				query = query + "&"
+			}
+			query = query + form_element.id + "=" + escape(query_value)
+		}
+		
+		execute_action ( action_element, command_path, query, target, result_div, ask_confirmation )
+	}
+
+	function execute_action ( action_element, command_path, query, target, result_div, ask_confirmation ) {
+	
+		if ( ask_confirmation ) {
+			if ( ! confirm ( "Are you sure?" ) ) {
+				return;
+			}
+		}
+
+		if ( action_element != null ) {
+			action_element.disabled = true;
+		}
+
+		var url = command_path + "?" + query
+	  
+		var request = get_xml_http();
+		request.open("POST", url, true);
+		request.onreadystatechange=function() {
+			if (request.readyState==4 && request.status==200) {
+				if ( action_element != null ) {
+					action_element.disabled = false;
+				}
+				document.getElementById(result_div).innerHTML=request.responseText
+			}
+		};
+		request.send();
+	}
+""" )
+		end
+	end
+	
+	command write_Ajax_functions
+		in writer type:simple_string_writer end
+			
+		script
+			i_writer.write ( string = """
+	function get_xml_http() {
+
+		var xmlhttp=false;
+
+		if (!xmlhttp && typeof XMLHttpRequest!='undefined') {
+			try {
+				xmlhttp = new XMLHttpRequest();
+			} catch (e) {
+				xmlhttp=false;
+			}
+		}
+
+		if (!xmlhttp && window.createRequest) {
+			try {
+				xmlhttp = window.createRequest();
+			} catch (e) {
+				xmlhttp=false;
+			}
+		}
+
+		if (!xmlhttp) {
+			alert ("Error: XML_HTTP_request not supported!")
+		}
+
+		return xmlhttp;
+	}
+
+	function synchronus_server_request(url) {
+
+		var request = get_xml_http();
+		request.open("GET", url, false)
+		request.send()
+		return request.responseText
+	}
+""" )
+		end
+	end
+
+end

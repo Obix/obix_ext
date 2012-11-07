@@ -1,0 +1,9 @@
+type iteratable_object_traverser_config default_factory:yes
+
+	attribute start_row_index type:positive32 default:1 end
+	attribute max_rows_to_generate type:zero_positive32 voidable:yes default:void end
+
+	attribute generate_table_header type:yes_no default:yes end
+	attribute generate_row_number_column type:yes_no default:yes end
+
+end

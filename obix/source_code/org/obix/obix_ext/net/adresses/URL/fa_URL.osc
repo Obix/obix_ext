@@ -1,0 +1,44 @@
+///
+   Copyright (C) 2009-2012 Christian Neumanns (www.rps-obix.com)
+   This code can be used under the terms of the 'GNU Afero General Public License version 3'
+   The full text of this license can be found at http://www.gnu.org/licenses/agpl.html
+   THIS CODE IS DISTRIBUTED WITHOUT ANY WARRANTY. See the license for details.
+end ///
+
+factory URL type:URL
+
+	java_header
+		import java.net.URL;
+	end java_header
+
+	java
+		private URL a_java_URL;
+		
+		public URL java_URL() { return a_java_URL; }
+	end java
+		
+
+	command to_URI
+		script
+			fa_URI.create_from_string ( &
+				string = a_value.to_string &
+				error_handler = i_error_handler ) &
+				( o_result = result &
+				o_error = error )
+		end
+	end
+
+	creator create kind:in_all
+
+		script
+			o_result.value = i_value
+			
+			java
+				o_result.a_java_URL = new URL ( i_value.java_value() );
+			end java
+		end
+	end
+
+	%create_from_string_creator_for_simple_string<URL>
+
+end factory
